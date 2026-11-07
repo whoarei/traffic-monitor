@@ -2,6 +2,11 @@
 
 为现有 Xray VLESS + REALITY 和 HTTPS 私人订阅部署提供每身份流量统计、历史记录、网页新增连接和月度配额管理。安装包为 `Architecture: all`，应用仅使用 Python 标准库；不包含服务器凭据，也不安装 Xray 本身。
 
+## 项目文档
+
+- [技术方案说明](docs/technical-design.md)：整体架构、流量账本、统一月度重置、临时加额、历史查询、数据模型、API、部署和维护。
+- [离线 HTML 技术方案](docs/technical-design.html)：下载后用浏览器打开，支持目录导航、配色切换和打印 / 保存 PDF。
+
 ## 安装
 
 支持使用 systemd 的 Debian/Ubuntu，需要已有以下部署结构：

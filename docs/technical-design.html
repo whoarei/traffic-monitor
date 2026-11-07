@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="apricot" data-document-id="vpn-traffic-technical-design">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>VPN Traffic 技术方案</title>
+  <script>
+    (() => {
+      const root = document.documentElement;
+      try {
+        const key = 'rtd-html-docs:theme:' + (root.dataset.documentId || location.pathname);
+        const saved = localStorage.getItem(key);
+        if (["classic","slate","forest","sky","mint","yellow","pink","apricot","lavender","dark"].includes(saved)) root.dataset.theme = saved;
+      } catch (_) { /* Reading and switching still work when storage is blocked. */ }
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #404040;
+      --muted: #737373;
+      --paper: #edf0f2;
+      --white: #fcfcfc;
+      --line: #e1e4e5;
+      --accent: #2980b9;
+      --accent-hover: #205f88;
+      --accent-soft: #e7f2fa;
+      --accent-ink: #25668f;
+      --accent-line: #c7ddeb;
+      --accent-edge: #6ab0de;
+      --amber: #916413;
+      --sand: #ffedcc;
+      --warning-line: #f0b37e;
+      --surface: #f3f6f6;
+      --surface-strong: #e8ecec;
+      --surface-raised: #fff;
+      --surface-subtle: #f8fafa;
+      --surface-neutral: #ededed;
+      --ink-soft: #555;
+      --ink-secondary: #626262;
+      --code-ink: #a33b31;
+      --selection: #b9d8ee;
+      --selection-ink: #253847;
+      --focus: #55a5d9;
+      --nav: #343131;
+      --nav-text: #d9d9d9;
+      --nav-hover: #4e4a4a;
+      --nav-active: #e3e3e3;
+      --nav-active-ink: #404040;
+      --nav-number: #b0adad;
+      --nav-active-number: #616161;
+      --nav-foot: #272525;
+      --nav-muted: #b3b3b3;
+      --nav-scrollbar: #686464;
+      --brand-bg: var(--accent);
+      --brand-ink: #fff;
+      --theme-swatch: var(--accent);
+      --nav-hover-ink: #fff;
+      --brand-sub: #e3eff7;
+      --button-bg: var(--accent);
+      --button-hover: var(--accent-hover);
+      --button-border: #2472a4;
+      --button-shadow: #1c5d87;
+      --select-bg: #383636;
+      --select-border: #777171;
+      --diagram-response: #42765f;
+      --diagram-muted: #666666;
+      --diagram-line: #d4dada;
+      --diagram-soft-line: #d5dada;
+      --diagram-accent-line: #b9d5e8;
+      --diagram-warning: #a66b25;
+      --diagram-warning-bg: #fff7e9;
+      --diagram-warning-line: #e8d2aa;
+      --diagram-extension: #766285;
+      --diagram-extension-bg: #f5f0f7;
+      --diagram-extension-line: #cdbed5;
+      --mono: SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      --heading: Georgia, "Times New Roman", "Noto Serif CJK SC", "Microsoft YaHei", serif;
+    }
+
+    @media all {
+      :root[data-theme="slate"] {
+        --paper: #e9edf0;
+        --white: #fafbfc;
+        --line: #dce2e7;
+        --accent: #52677b;
+        --accent-hover: #3d5062;
+        --accent-soft: #eaf0f5;
+        --accent-ink: #40596f;
+        --accent-line: #ccd8e3;
+        --accent-edge: #8aa2b7;
+        --surface: #f0f3f6;
+        --surface-strong: #e4e9ee;
+        --surface-subtle: #f6f8fa;
+        --nav: #2c333b;
+        --nav-hover: #3c4752;
+        --nav-active: #e2e8ee;
+        --nav-foot: #222830;
+        --nav-scrollbar: #657484;
+        --nav-number: #a7b7c5;
+        --brand-sub: #e4eaf0;
+        --focus: #a4bdd3;
+        --button-border: #475e72;
+        --button-shadow: #374c5e;
+        --select-bg: #303a44;
+        --select-border: #6b7c8c;
+        --selection: #cad9e6;
+        --diagram-response: #426f70;
+        --diagram-accent-line: #c2d0dd;
+      }
+      :root[data-theme="forest"] {
+        --paper: #ebf0ed;
+        --white: #fcfdfb;
+        --line: #dce5df;
+        --accent: #26735b;
+        --accent-hover: #19553f;
+        --accent-soft: #eaf4ee;
+        --accent-ink: #256148;
+        --accent-line: #c4ddce;
+        --accent-edge: #72aa8f;
+        --surface: #f0f5f1;
+        --surface-strong: #e3ece6;
+        --surface-subtle: #f7faf7;
+        --nav: #293a33;
+        --nav-hover: #3b5146;
+        --nav-active: #e2ece6;
+        --nav-foot: #213029;
+        --nav-scrollbar: #637e6f;
+        --nav-number: #a8bfb1;
+        --brand-sub: #e2f1e9;
+        --focus: #9bceb4;
+        --button-border: #21654e;
+        --button-shadow: #164c39;
+        --select-bg: #2e4237;
+        --select-border: #6c8b7a;
+        --selection: #c5e4d2;
+        --selection-ink: #244736;
+        --diagram-response: #466ba0;
+        --diagram-accent-line: #bcd9c7;
+      }
+      :root[data-theme="sky"] {
+        --theme-swatch: #3566f0;
+        --paper: #f7f9fe;
+        --white: #fefeff;
+        --line: #dfe7fd;
+        --accent: #3566f0;
+        --accent-hover: #2347b5;
+        --accent-soft: #f3f6fe;
+        --accent-ink: #3566f0;
+        --accent-line: #d3ddfc;
+        --accent-edge: #688cf4;
+        --surface: #f9faff;
+        --surface-strong: #eff3fe;
+        --surface-subtle: #fcfdff;
+        --surface-neutral: #f1f4fe;
+        --selection: #c2d1fb;
+        --selection-ink: #29456e;
+        --focus: #3566f0;
+        --nav: #f6f8fe;
+        --nav-text: #29456e;
+        --nav-hover: #e9eefd;
+        --nav-hover-ink: #29456e;
+        --nav-active: #d7e0fc;
+        --nav-active-ink: #29456e;
+        --nav-number: #536781;
+        --nav-active-number: #29456e;
+        --nav-foot: #eff3fe;
+        --nav-muted: #536781;
+        --nav-scrollbar: #b2c5f9;
+        --brand-bg: #3566f0;
+        --brand-ink: #ffffff;
+        --brand-sub: #ffffff;
+        --button-bg: #3566f0;
+        --button-hover: #2347b5;
+        --button-border: #2347b5;
+        --button-shadow: #2347b5;
+        --select-bg: #fff;
+        --select-border: #a4baf8;
+        --diagram-response: #32785f;
+        --diagram-accent-line: #becefa;
+      }
+      :root[data-theme="mint"] {
+        --theme-swatch: #04bb9f;
+        --paper: #f5fcfb;
+        --white: #feffff;
+        --line: #d7f4f0;
+        --accent: #087b69;
+        --accent-hover: #075b4e;
+        --accent-soft: #f0fbf9;
+        --accent-ink: #087b69;
+        --accent-line: #c8f0ea;
+        --accent-edge: #43ccb7;
+        --surface: #f7fdfc;
+        --surface-strong: #ebfaf7;
+        --surface-subtle: #fbfefe;
+        --surface-neutral: #edfaf8;
+        --selection: #b4ebe2;
+        --selection-ink: #285b50;
+        --focus: #087b69;
+        --nav: #f4fcfb;
+        --nav-text: #285b50;
+        --nav-hover: #e3f8f4;
+        --nav-hover-ink: #285b50;
+        --nav-active: #cdf1ec;
+        --nav-active-ink: #285b50;
+        --nav-number: #4f6c62;
+        --nav-active-number: #285b50;
+        --nav-foot: #ebfaf7;
+        --nav-muted: #4f6c62;
+        --nav-scrollbar: #a0e5db;
+        --brand-bg: #04bb9f;
+        --brand-ink: #073d32;
+        --brand-sub: #073d32;
+        --button-bg: #087b69;
+        --button-hover: #075b4e;
+        --button-border: #075b4e;
+        --button-shadow: #075b4e;
+        --select-bg: #fff;
+        --select-border: #8ee0d4;
+        --diagram-response: #466fa0;
+        --diagram-accent-line: #afe9e0;
+      }
+      :root[data-theme="yellow"] {
+        --theme-swatch: #ffcc38;
+        --paper: #fffdf7;
+        --white: #fffffe;
+        --line: #fff7df;
+        --accent: #80610b;
+        --accent-hover: #624907;
+        --accent-soft: #fffcf3;
+        --accent-ink: #80610b;
+        --accent-line: #fff4d3;
+        --accent-edge: #ffd96a;
+        --surface: #fffdf9;
+        --surface-strong: #fffbef;
+        --surface-subtle: #fffefc;
+        --surface-neutral: #fffbf1;
+        --selection: #fff0c3;
+        --selection-ink: #66531e;
+        --focus: #80610b;
+        --nav: #fffdf6;
+        --nav-text: #66531e;
+        --nav-hover: #fff9e9;
+        --nav-hover-ink: #66531e;
+        --nav-active: #fff5d7;
+        --nav-active-ink: #66531e;
+        --nav-number: #73663f;
+        --nav-active-number: #66531e;
+        --nav-foot: #fffbef;
+        --nav-muted: #73663f;
+        --nav-scrollbar: #ffecb3;
+        --brand-bg: #ffcc38;
+        --brand-ink: #4d3c06;
+        --brand-sub: #4d3c06;
+        --button-bg: #80610b;
+        --button-hover: #624907;
+        --button-border: #624907;
+        --button-shadow: #624907;
+        --select-bg: #fff;
+        --select-border: #ffe8a5;
+        --diagram-response: #327b85;
+        --diagram-accent-line: #ffefbf;
+      }
+      :root[data-theme="pink"] {
+        --theme-swatch: #fa70ab;
+        --paper: #fff9fc;
+        --white: #fffeff;
+        --line: #fee8f2;
+        --accent: #a33363;
+        --accent-hover: #7e254b;
+        --accent-soft: #fff6fa;
+        --accent-ink: #a33363;
+        --accent-line: #fee0ed;
+        --accent-edge: #fb94c0;
+        --surface: #fffbfc;
+        --surface-strong: #fff4f8;
+        --surface-subtle: #fffdfe;
+        --surface-neutral: #fff5f9;
+        --selection: #fed4e6;
+        --selection-ink: #70364e;
+        --focus: #a33363;
+        --nav: #fff9fb;
+        --nav-text: #70364e;
+        --nav-hover: #feeff6;
+        --nav-hover-ink: #70364e;
+        --nav-active: #fee2ee;
+        --nav-active-ink: #70364e;
+        --nav-number: #785868;
+        --nav-active-number: #70364e;
+        --nav-foot: #fff4f8;
+        --nav-muted: #785868;
+        --nav-scrollbar: #fdc9df;
+        --brand-bg: #fa70ab;
+        --brand-ink: #42152b;
+        --brand-sub: #42152b;
+        --button-bg: #a33363;
+        --button-hover: #7e254b;
+        --button-border: #7e254b;
+        --button-shadow: #7e254b;
+        --select-bg: #fff;
+        --select-border: #fdbfd9;
+        --diagram-response: #347b6d;
+        --diagram-accent-line: #fdd1e4;
+      }
+      :root[data-theme="apricot"] {
+        --theme-swatch: #ff8066;
+        --paper: #fffaf9;
+        --white: #fffefe;
+        --line: #ffebe7;
+        --accent: #a8442d;
+        --accent-hover: #80301f;
+        --accent-soft: #fff7f6;
+        --accent-ink: #a8442d;
+        --accent-line: #ffe3dd;
+        --accent-edge: #ffa08c;
+        --surface: #fffbfa;
+        --surface-strong: #fff5f3;
+        --surface-subtle: #fffdfd;
+        --surface-neutral: #fff6f4;
+        --selection: #ffd9d1;
+        --selection-ink: #743e2f;
+        --focus: #a8442d;
+        --nav: #fff9f8;
+        --nav-text: #743e2f;
+        --nav-hover: #fff1ee;
+        --nav-hover-ink: #743e2f;
+        --nav-active: #ffe6e0;
+        --nav-active-ink: #743e2f;
+        --nav-number: #795c52;
+        --nav-active-number: #743e2f;
+        --nav-foot: #fff5f3;
+        --nav-muted: #795c52;
+        --nav-scrollbar: #ffcfc5;
+        --brand-bg: #ff8066;
+        --brand-ink: #542114;
+        --brand-sub: #542114;
+        --button-bg: #a8442d;
+        --button-hover: #80301f;
+        --button-border: #80301f;
+        --button-shadow: #80301f;
+        --select-bg: #fff;
+        --select-border: #ffc6ba;
+        --diagram-response: #327b85;
+        --diagram-accent-line: #ffd6ce;
+      }
+      :root[data-theme="lavender"] {
+        --theme-swatch: #a25bff;
+        --paper: #fbf8ff;
+        --white: #fffeff;
+        --line: #f0e5ff;
+        --accent: #7840c0;
+        --accent-hover: #5c2c99;
+        --accent-soft: #f9f5ff;
+        --accent-ink: #7840c0;
+        --accent-line: #ebdbff;
+        --accent-edge: #b984ff;
+        --surface: #fcfaff;
+        --surface-strong: #f8f2ff;
+        --surface-subtle: #fefdff;
+        --surface-neutral: #f8f4ff;
+        --selection: #e3ceff;
+        --selection-ink: #5c3a7b;
+        --focus: #7840c0;
+        --nav: #fbf8ff;
+        --nav-text: #5c3a7b;
+        --nav-hover: #f5edff;
+        --nav-hover-ink: #5c3a7b;
+        --nav-active: #ecdeff;
+        --nav-active-ink: #5c3a7b;
+        --nav-number: #6b587f;
+        --nav-active-number: #5c3a7b;
+        --nav-foot: #f8f2ff;
+        --nav-muted: #6b587f;
+        --nav-scrollbar: #dcc1ff;
+        --brand-bg: #a25bff;
+        --brand-ink: #241033;
+        --brand-sub: #241033;
+        --button-bg: #7840c0;
+        --button-hover: #5c2c99;
+        --button-border: #5c2c99;
+        --button-shadow: #5c2c99;
+        --select-bg: #fff;
+        --select-border: #d5b5ff;
+        --diagram-response: #347b6d;
+        --diagram-accent-line: #e1cbff;
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --ink: #dbe2eb;
+        --muted: #acb7c6;
+        --paper: #121820;
+        --white: #1c2530;
+        --line: #3c4a5c;
+        --accent: #8fc5ed;
+        --accent-hover: #b6def8;
+        --accent-soft: #243c50;
+        --accent-ink: #a8d6f5;
+        --accent-line: #476781;
+        --accent-edge: #598fba;
+        --amber: #f1ce91;
+        --sand: #3e3323;
+        --warning-line: #b88c50;
+        --surface: #232f3d;
+        --surface-strong: #2d3b4c;
+        --surface-raised: #1c2530;
+        --surface-subtle: #202c39;
+        --surface-neutral: #334153;
+        --ink-soft: #c2ccd9;
+        --ink-secondary: #bac7d7;
+        --code-ink: #f2b5a8;
+        --selection: #3c6380;
+        --selection-ink: #fff;
+        --focus: #8fc5ed;
+        --nav: #17212c;
+        --nav-text: #d0dbe6;
+        --nav-hover: #2a3b4e;
+        --nav-active: #304a63;
+        --nav-active-ink: #f1f5fa;
+        --nav-number: #9eafc2;
+        --nav-active-number: #c7d6e5;
+        --nav-foot: #101923;
+        --nav-muted: #aab8c9;
+        --nav-scrollbar: #4e6279;
+        --brand-bg: #23445f;
+        --brand-sub: #d1e1ee;
+        --button-bg: #27668f;
+        --button-hover: #3078a6;
+        --button-border: #397fae;
+        --button-shadow: #19466a;
+        --select-bg: #243448;
+        --select-border: #5a7089;
+        --diagram-response: #99c7a9;
+        --diagram-muted: #b5c2d0;
+        --diagram-line: #495b70;
+        --diagram-soft-line: #495b70;
+        --diagram-accent-line: #52789a;
+        --diagram-warning: #e3bd7e;
+        --diagram-warning-bg: #3b3226;
+        --diagram-warning-line: #8f7852;
+        --diagram-extension: #c2b2dc;
+        --diagram-extension-bg: #322d42;
+        --diagram-extension-line: #78668e;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 28px; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.75 "Segoe UI", "Helvetica Neue", Arial, "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: var(--selection); color: var(--selection-ink); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-hover); text-decoration: underline; }
+    button { font: inherit; cursor: pointer; }
+    button:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    /* A classic documentation sidebar, with export always available below it. */
+    .shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--nav);
+      color: var(--nav-text);
+    }
+    .sidebar-header { flex-shrink: 0; padding: 28px 22px 24px; background: var(--brand-bg); text-align: center; }
+    .brand { font: 700 21px/1.4 "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--brand-ink); }
+    .brand span { color: var(--brand-ink); }
+    .brand svg { width: 17px; height: 17px; vertical-align: -2px; margin-right: 8px; }
+    .sidebar .sub { font-size: 12px; color: var(--brand-sub); margin: 10px 0 0; }
+    .sidebar nav { flex: 1; min-height: 0; padding: 16px 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--nav-scrollbar) transparent; }
+    .sidebar nav::before { content: "文档目录"; display: block; padding: 0 24px 10px; color: var(--focus); font-size: 13px; font-weight: 700; }
+    .sidebar nav a {
+      display: block;
+      color: var(--nav-text);
+      text-decoration: none;
+      padding: 9px 24px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .sidebar nav a:hover { color: var(--nav-hover-ink); background: var(--nav-hover); }
+    .sidebar nav a.active { color: var(--nav-active-ink); background: var(--nav-active); font-weight: 700; }
+    .sidebar nav span { font: 11px var(--mono); color: var(--nav-number); margin-right: 10px; }
+    .sidebar nav a.active span { color: var(--nav-active-number); }
+    .sidebar .foot { flex-shrink: 0; background: var(--nav-foot); padding: 17px 24px 20px; font-size: 11px; line-height: 1.9; color: var(--nav-muted); }
+    .sidebar button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: var(--button-bg);
+      border: 1px solid var(--button-border);
+      border-bottom: 2px solid var(--button-shadow);
+      color: white;
+      border-radius: 2px;
+      padding: 8px 12px;
+      margin-top: 13px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .sidebar button:hover { background: var(--button-hover); }
+    .sidebar button svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+
+    .theme-control { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .theme-control[hidden] { display: none; }
+    .theme-control label { flex-shrink: 0; font-size: 12px; color: var(--nav-text); }
+    .theme-control label::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; background: var(--theme-swatch); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+    .theme-control select {
+      min-width: 0;
+      flex: 1;
+      font: 12px/1.5 "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: var(--select-bg);
+      color: var(--nav-text);
+      border: 1px solid var(--select-border);
+      border-radius: 2px;
+      padding: 7px 8px;
+      cursor: pointer;
+    }
+    .theme-control select:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+    main { min-width: 0; max-width: 1100px; width: 100%; padding: 30px 48px 64px; margin: 0; background: var(--white); }
+    .eyebrow { font: 12px/1.6 var(--mono); color: var(--muted); padding-bottom: 22px; margin-bottom: 26px; border-bottom: 1px solid var(--line); }
+    .hero { padding: 0 0 24px; border-bottom: 1px solid var(--line); margin-bottom: 30px; }
+    .hero h1 { font: 700 30px/1.45 var(--heading); letter-spacing: -.4px; margin: 0 0 22px; color: var(--ink); }
+    .hero h1 br { display: none; }
+    .hero .lead { font-size: 16px; line-height: 1.85; color: var(--ink); }
+    .chips { display: flex; gap: 7px; flex-wrap: wrap; margin: 20px 0; }
+    .chip { font: 11px/1.6 var(--mono); padding: 3px 7px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-secondary); }
+    .chip.green { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent-line); }
+    .section { margin: 30px 0 44px; scroll-margin-top: 28px; }
+    .section-head { display: flex; align-items: baseline; gap: 11px; margin-bottom: 22px; }
+    .section-num { font: 700 14px var(--mono); color: var(--muted); }
+    h2 { font: 700 25px/1.4 var(--heading); margin: 0; color: var(--ink); }
+    h3 { font: 700 20px/1.5 var(--heading); margin: 26px 0 14px; }
+    h4 { font-size: 17px; margin: 22px 0 12px; }
+    p { margin: 12px 0 18px; }
+    strong { font-weight: 650; }
+    ul, ol { padding-left: 24px; margin: 12px 0 20px; }
+    li { margin: 6px 0; }
+    li::marker { color: var(--ink); }
+    .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 20px 0 24px; }
+    .card { background: transparent; border-top: 2px solid var(--line); padding: 15px 0 0; }
+    .card h3 { margin: 0 0 10px; font-size: 17px; }
+    .card p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+    .callout { padding: 14px 18px; border: 0; border-top: 4px solid var(--accent-edge); background: var(--accent-soft); margin: 22px 0; }
+    .callout.amber { border-top-color: var(--warning-line); background: var(--sand); }
+    .callout p { margin: 3px 0; }
+    .small, .caption { font-size: 13px; color: var(--muted); }
+    .caption { margin: 10px 0 20px; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); background: var(--surface-raised); margin: 18px 0 24px; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.75; }
+    th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); }
+    th { font-size: 13px; font-weight: 700; background: var(--surface-strong); color: var(--ink); }
+    tr:last-child td { border-bottom: 0; }
+    th:last-child, td:last-child { border-right: 0; }
+    tbody tr:nth-child(even) { background: var(--surface); }
+    td:first-child { font-weight: 550; }
+    code { font: .85em/1.5 var(--mono); background: var(--surface-raised); color: var(--code-ink); border: 1px solid var(--line); padding: 2px 5px; overflow-wrap: anywhere; }
+    pre { font: 12px/1.75 var(--mono); background: var(--surface); color: var(--ink); border: 1px solid var(--line); padding: 16px; overflow: auto; margin: 16px 0 24px; tab-size: 2; }
+    pre code { font: inherit; background: none; border: 0; padding: 0; color: inherit; overflow-wrap: normal; }
+    .tag { display: inline-block; background: var(--accent-soft); color: var(--accent-ink); padding: 1px 6px; font-size: 12px; white-space: nowrap; }
+    .tag.gray { background: var(--surface-neutral); color: var(--ink-secondary); }
+    .tag.amber { background: var(--sand); color: var(--amber); }
+    figure { margin: 22px 0; }
+    .diagram { border: 1px solid var(--line); overflow: auto; background: var(--surface-raised); padding: 14px; }
+    .diagram svg { display: block; width: 100%; min-width: 750px; height: auto; }
+    .architecture-diagram { padding: 10px; }
+    .architecture-diagram svg { min-width: 1080px; }
+    .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+    .step { border: 1px solid var(--line); padding: 16px; background: var(--surface); font-size: 13px; }
+    .step b { display: block; font: 12px var(--mono); color: var(--accent); margin-bottom: 8px; }
+    .step strong { display: block; font-size: 15px; }
+    .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .two-col > * { min-width: 0; }
+    .formula { background: var(--surface); border: 1px solid var(--line); padding: 16px 18px; font: 13px/1.9 var(--mono); overflow: auto; }
+    details { border: 1px solid var(--line); background: var(--surface-subtle); margin: 16px 0; padding: 0 16px; }
+    summary { cursor: pointer; padding: 13px 0; font-size: 14px; font-weight: 600; }
+    summary::marker { color: var(--accent); }
+    details[open] { padding-bottom: 16px; }
+    details pre { margin-bottom: 0; }
+    .milestone { display: grid; grid-template-columns: 55px 1fr; border-bottom: 1px solid var(--line); gap: 14px; padding: 20px 0; }
+    .milestone .id { font: 18px var(--mono); color: var(--accent); }
+    .milestone h3 { margin: 0 0 8px; }
+    .milestone p { margin: 0; font-size: 14px; }
+    .refs li { font-size: 14px; margin-bottom: 14px; }
+    .footer { margin-top: 48px; border-top: 1px solid var(--line); padding-top: 22px; font-size: 12px; color: var(--muted); }
+    .nowrap { white-space: nowrap; }
+
+    @media (max-width: 1100px) {
+      .shell { grid-template-columns: 260px minmax(0, 1fr); }
+      .sidebar nav a { padding: 9px 20px; font-size: 13px; }
+      .sidebar nav::before { padding-left: 20px; }
+      .sidebar .foot { padding-left: 20px; padding-right: 20px; }
+      main { padding: 28px 30px 56px; }
+      .cards { grid-template-columns: 1fr; gap: 16px; }
+      .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .shell { display: block; }
+      .sidebar { position: relative; height: auto; }
+      .sidebar-header { padding: 17px 20px 16px; text-align: left; }
+      .brand { font-size: 20px; }
+      .sidebar .sub { margin-top: 5px; }
+      .sidebar nav { display: flex; flex: none; overflow-x: auto; gap: 0; padding: 10px 12px; }
+      .sidebar nav::before { display: none; }
+      .sidebar nav a { flex-shrink: 0; white-space: nowrap; padding: 8px 10px; font-size: 12px; }
+      .sidebar .foot { display: flex; align-items: center; flex-wrap: wrap; gap: 0 14px; padding: 10px 20px 13px; font-size: 10px; }
+      .theme-control { flex-basis: 100%; margin-bottom: 10px; }
+      .sidebar button { width: auto; margin-top: 8px; padding: 7px 11px; font-size: 12px; }
+      main { padding: 24px 20px 46px; }
+      .eyebrow { font-size: 10px; padding-bottom: 17px; margin-bottom: 22px; }
+      .hero h1 { font-size: 26px; }
+      .hero h1 br { display: initial; }
+      .hero .lead { font-size: 16px; }
+      .two-col { grid-template-columns: 1fr; }
+      .section { margin-bottom: 38px; }
+      .section-head { gap: 9px; }
+      .section-num { font-size: 12px; }
+      h2 { font-size: 22px; }
+      th, td { padding: 9px 10px; min-width: 110px; }
+      .chips { gap: 6px; }
+      .chip { font-size: 10px; }
+      .steps { grid-template-columns: 1fr; }
+      pre { padding: 13px; font-size: 11px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+    @media print {
+      @page { size: A4; margin: 16mm 14mm; }
+      html { scroll-behavior: auto; background: var(--white); }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { background: var(--white); font-size: 10pt; line-height: 1.65; }
+      .shell { display: block; }
+      .sidebar { display: none; }
+      main { max-width: none; padding: 0; background: var(--white); }
+      .eyebrow { margin-bottom: 20px; padding-bottom: 14px; }
+      .hero h1 { font-size: 23pt; }
+      .hero .lead { font-size: 11pt; }
+      .section { margin: 22px 0 28px; }
+      .section-head { break-after: avoid; }
+      h2 { font-size: 17pt; }
+      h3 { font-size: 12pt; break-after: avoid; }
+      .cards { grid-template-columns: repeat(3, 1fr); }
+      .card, .callout, .milestone, .step { break-inside: avoid; }
+      .steps { break-inside: avoid; }
+      table { font-size: 9pt; }
+      thead { display: table-header-group; }
+      tr { break-inside: avoid; }
+      .table-wrap { overflow: visible; }
+      th, td { padding: 7px 9px; min-width: 0; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 8pt; break-inside: auto; }
+      .diagram { overflow: visible; padding: 8px; break-inside: avoid; }
+      .diagram svg, .architecture-diagram svg { min-width: 0; }
+      figure { break-inside: avoid; }
+      .architecture-diagram { padding: 3px; }
+      .chip { font-size: 8pt; }
+      a { color: var(--accent); text-decoration: none; }
+      details { break-inside: auto; }
+      .caption, .small { font-size: 9pt; }
+      button { display: none; }
+      .footer { font-size: 8pt; }
+    }
+
+    .brand { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">VPN Traffic</div>
+      <div class="sub">架构、统计与运维</div>
+    </div>
+    <nav aria-label="文档目录">
+      <a href="#scope"><span>01</span>目标与适用范围</a>
+      <a href="#architecture"><span>02</span>整体架构与职责</a>
+      <a href="#accounting"><span>03</span>身份与流量账本</a>
+      <a href="#monthly-quota"><span>04</span>月度额度与系统统一重置</a>
+      <a href="#temporary-allowance"><span>05</span>临时加额与连接管理</a>
+      <a href="#history"><span>06</span>小时历史、连接筛选与导出</a>
+      <a href="#resources"><span>07</span>服务器资源展示</a>
+      <a href="#storage"><span>08</span>数据模型与保留策略</a>
+      <a href="#api"><span>09</span>HTTP API 与访问控制</a>
+      <a href="#operations"><span>10</span>打包、部署与维护</a>
+      <a href="#verification"><span>11</span>验证依据与实现边界</a>
+    </nav>
+    <div class="foot">
+      <div class="theme-control" hidden><label for="theme-select">文档配色</label><select id="theme-select"><optgroup label="经典配色"><option value="classic">经典蓝</option><option value="slate">石墨灰</option><option value="forest">森林绿</option></optgroup><optgroup label="亮色配色"><option value="sky">蓝色 · 亮色</option><option value="mint">绿色 · 亮色</option><option value="yellow">黄色 · 亮色</option><option value="pink">粉色 · 亮色</option><option value="apricot" selected>橙色 · 默认</option><option value="lavender">紫色 · 亮色</option></optgroup><optgroup label="深色配色"><option value="dark">深色</option></optgroup></select></div>
+      更新于 2026-11-07<br>版本 1.3.0<br>单文件 HTML · 支持离线阅读
+      <button type="button" id="print-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7zM17 11h.01"/></svg>打印 / 保存 PDF</button>
+    </div>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">项目技术方案 / Debian · Ubuntu</div>
+      <h1>VPN Traffic 技术方案</h1>
+      <p class="lead">按连接身份统计流量，统一执行月度重置和临时加额，并提供历史查询与服务器资源展示。</p><p>本文依据仓库 1.3.0 源码整理。<a href="technical-design.md">Markdown 版本</a>适合在 GitHub 中阅读；本文件可离线打开。部署账号和现场验收资料另行私人保存。</p>
+    </header>
+    <section class="section" id="scope">
+      <div class="section-head"><span class="section-num">01</span><h2>目标与适用范围</h2></div>
+<p>项目为已有 Xray VLESS + REALITY + Vision 部署增加按连接身份统计和管理的能力：</p>
+<ul>
+<li>每条连接的上传、下载、累计、今日和自然月用量。</li>
+<li>最近 24 小时的小时历史，以及按天、按连接查询和 CSV 导出。</li>
+<li>新增连接、调整月度额度、手工启停、轮换或撤销凭据、查看私人在线订阅。</li>
+<li>全系统共用的月度重置日期与时间，以及额度用尽后的临时加额恢复。</li>
+<li>Web 页面左下角的 CPU、内存和根分区磁盘占用；手机布局显示在页面底部。</li>
+</ul>
+<p>运行环境为使用 systemd 的 Debian / Ubuntu、Python 3.10 及以上版本和系统 <code>tzdata</code>。应用使用 Python 标准库、SQLite、原生 JavaScript 和 CSS，没有运行时 Python 第三方依赖。Debian 安装包为 <code>Architecture: all</code>。</p>
+<p>安装前需已有 <code>/usr/local/bin/xray</code>、<code>/usr/local/etc/xray/config.json</code>、<code>xray.service</code>、<code>/root/xray-deployment/manifest.json</code>、<code>/root/xray-deployment/backup.sh</code>、<code>/usr/local/sbin/xray-subscription</code> 和配置好 HTTPS 8443 的订阅站点。本包依赖这些部署约定；迁移到其他 Xray 管理系统前需要适配集成层。每条需要独立统计的连接必须使用唯一的 Xray <code>email</code>。</p>
+
+    </section>
+
+    <section class="section" id="architecture">
+      <div class="section-head"><span class="section-num">02</span><h2>整体架构与职责</h2></div>
+<figure><div class="diagram"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 140" role="img" aria-labelledby="query-title query-desc"><title id="query-title">流量监控查询链路</title><desc id="query-desc">浏览器通过 HTTPS 访问 Nginx，Nginx 转发给 Web，Web 以只读方式查询 SQLite。</desc><defs><marker id="query-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--accent, #9d3926)"/></marker></defs><g fill="var(--surface-raised, #fff)" stroke="var(--diagram-accent-line, #d9a28c)" stroke-width="1.5"><rect x="20" y="35" width="185" height="70" rx="9"/><rect x="250" y="35" width="185" height="70" rx="9"/><rect x="480" y="35" width="185" height="70" rx="9"/><rect x="710" y="35" width="185" height="70" rx="9"/></g><g fill="var(--ink, #404040)" font-family="Segoe UI, Microsoft YaHei, sans-serif" text-anchor="middle" font-size="17"><text x="112" y="64">浏览器</text><text x="342" y="64">Nginx</text><text x="572" y="64">Web</text><text x="802" y="64">SQLite</text></g><g fill="var(--muted, #666)" font-family="Consolas, Microsoft YaHei, monospace" text-anchor="middle" font-size="12"><text x="112" y="87">历史 / 额度 / CSV</text><text x="342" y="87">HTTPS :8443</text><text x="572" y="87">127.0.0.1:9081</text><text x="802" y="87">只读查询</text></g><g fill="none" stroke="var(--accent, #9d3926)" stroke-width="2" marker-end="url(#query-arrow)"><path d="M207,70 H243"/><path d="M437,70 H473"/><path d="M667,70 H703"/></g></svg></div><figcaption class="caption">查询链路。流量写入及特权管理通过独立服务完成。</figcaption></figure><p>查询链路：浏览器 → HTTPS Nginx <code>/traffic/</code> → Web <code>127.0.0.1:9081</code> → SQLite 只读查询。</p>
+<p>采集链路：采集器 → Xray StatsService <code>127.0.0.1:10085</code> → 计算增量 → SQLite 事务写入。资源指标来自 <code>/proc/stat</code>、<code>/proc/meminfo</code> 和根分区。</p>
+<p>管理链路：浏览器 → 同源及 CSRF 校验 → Web → 本地 Unix 套接字 → 特权管理器 → 更新 Xray 配置、身份清单和订阅。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>代码</th>
+<th>职责与权限</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>流量采集器</td>
+<td><code>app/collector.py</code></td>
+<td><code>vpn-traffic</code> 用户；每 30 秒读取流量，每约 5 秒采集资源；提供停止前 checkpoint。</td>
+</tr>
+<tr>
+<td>数据层</td>
+<td><code>app/store.py</code></td>
+<td>增量账本、周期、历史聚合、资源快照、迁移和查询一致性。</td>
+</tr>
+<tr>
+<td>Web 服务</td>
+<td><code>app/server.py</code></td>
+<td><code>vpn-traffic</code> 用户；数据目录只读；静态页面、JSON API、CSV 及受限管理代理。</td>
+</tr>
+<tr>
+<td>特权管理器</td>
+<td><code>app/manager.py</code></td>
+<td>root；每约 2 秒检查配额；执行限定的连接、计划和临时流量操作。</td>
+</tr>
+<tr>
+<td>管理客户端</td>
+<td><code>app/manager_client.py</code></td>
+<td>JSON 行协议，连接 <code>/run/vpn-traffic-manager/control.sock</code>。</td>
+</tr>
+<tr>
+<td>系统集成</td>
+<td><code>app/integration.py</code></td>
+<td>配置统计 API、Nginx、账户权限、订阅保留路由、备份和卸载恢复。</td>
+</tr>
+<tr>
+<td>资源采样</td>
+<td><code>app/system_info.py</code></td>
+<td>读取 Linux 系统指标，避免每次网页请求都阻塞采样。</td>
+</tr>
+<tr>
+<td>CLI 与页面</td>
+<td><code>app/main.py</code>、<code>web/</code></td>
+<td>维护命令及浏览器管理界面。</td>
+</tr>
+</tbody></table></div>
+<p>三个应用进程分别由 <code>vpn-traffic-collector</code>、<code>vpn-traffic-web</code>、<code>vpn-traffic-manager</code> systemd 服务管理。SQLite 写入由采集器和管理器的事务串行协调；Web 使用只读连接。服务通过 <code>ProtectSystem</code>、目录读写白名单、<code>NoNewPrivileges</code> 和内存限制约束运行范围。</p>
+
+    </section>
+
+    <section class="section" id="accounting">
+      <div class="section-head"><span class="section-num">03</span><h2>身份与流量账本</h2></div>
+<p>统计使用 Xray 的 <code>user&gt;&gt;&gt;email&gt;&gt;&gt;traffic&gt;&gt;&gt;uplink/downlink</code> 计数。上传表示客户端发往服务器，下载表示服务器返回客户端。VLESS 链接和该身份的在线订阅共享同一身份；多人共用同一身份时只得到合计流量。</p>
+<p>采集器保存每个身份上次的原始计数和进程代际。代际由系统启动 ID、Xray PID 和进程启动时间组合；采集前后会检查代际，防止跨重启读取混合结果。</p>
+<pre><code class="language-text">同一代际且当前计数 &gt;= 上次计数：增量 = 当前计数 - 上次计数
+代际变化或计数下降：             增量 = 当前计数
+</code></pre>
+<p>原始计数、累计值、本期用量、日汇总和采样明细在同一事务提交。重复采集相同读数不会重复累计。系统时钟回退时推迟采样，避免重复写入错误时间段。</p>
+<p>正常 Xray 停止前，systemd 的 <code>ExecStop</code> 会调用 <code>vpn-traffic checkpoint --quiet</code>，让采集器保存尾段计数；采集器不可用时不会阻止 Xray 停止。进程突然崩溃或服务器掉电时，可能丢失上次成功采集之后的流量。</p>
+<p>累计从启用统计时开始，不补算此前用量。速率为最近采样间隔的平均字节 / 秒。计数属于代理流量，不能直接作为服务商网络账单。</p>
+
+    </section>
+
+    <section class="section" id="monthly-quota">
+      <div class="section-head"><span class="section-num">04</span><h2>月度额度与系统统一重置</h2></div>
+<p>每个身份独立设置基础月额度和手工启用状态，全部身份使用同一份 <code>reset_schedule</code>。时间按 <code>Asia/Shanghai</code> 执行；日期可选每月 1–31 日和 <code>HH:MM</code>。不存在的日期按当月月末执行，后续月份仍保留原设置日。</p>
+<pre><code class="language-text">U = period_up + period_down       本期已用
+Q = quota                        基础月额度；0 表示不限额
+B = bonus                        本期临时额度
+有效额度 = Q + B                 仅对有限额身份适用
+可用流量 = max(0, Q + B - U)
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>条件</th>
+<th>转发状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>手工停用 <code>enabled = false</code></td>
+<td>停用，原因是 <code>disabled</code>。</td>
+</tr>
+<tr>
+<td>已启用，且 <code>Q &gt; 0</code>、<code>U &gt;= Q + B</code></td>
+<td>停用，原因是 <code>quota</code>。</td>
+</tr>
+<tr>
+<td>已启用，且不限额或尚有可用流量</td>
+<td>可用。</td>
+</tr>
+</tbody></table></div>
+<p>修改系统计划只调整计划和下次执行时间，保留所有身份本期已用量、基础额度及临时额度。系统重置时统一清零本期上传、下载和临时额度，保留基础月额度、累计和历史；手工停用的身份仍停用。</p>
+<p>“立即重置本期用量”只清零指定身份的本期用量，保留临时额度和全局重置时间。页面“本月流量”按自然月统计，“本期已用”按全局计划统计，两者可能不同。</p>
+<p>管理器每约 2 秒读取当前计数，结合已落库用量判断是否超额，避免等待 30 秒普通采样后才停用。触及额度时先 checkpoint，再应用配置。该机制可能超出一个检查间隔及缓冲中的传输量，不是逐字节硬上限。</p>
+
+    </section>
+
+    <section class="section" id="temporary-allowance">
+      <div class="section-head"><span class="section-num">05</span><h2>临时加额与连接管理</h2></div>
+<p>临时加额以“增加指定可用量”为语义，先补齐已经超出的部分，再增加申请量。设本次增加量为 <code>A</code>：</p>
+<pre><code class="language-text">新的临时额度 B&#39; = max(B, U - Q) + A
+</code></pre>
+<p>例如基础额度为 50 GiB，已经使用 51 GiB，临时增加 5 GiB 后，临时额度为 6 GiB、有效额度为 56 GiB，可继续使用 5 GiB。操作保留本期已用量、累计和历史，不修改基础月额度。</p>
+<p>因超额停用的身份在获得可用额度后恢复；手工停用的身份不自动恢复。临时额度在下次全系统重置时失效。不限额身份不接受临时加额。<code>request_id</code> 与 <code>allowance_operations</code> 记录保证同一加额请求重试时不会重复增加流量，参数冲突会拒绝。</p>
+<p>新增连接生成独立 UUID 和 Short ID，创建 VLESS 分享链接及私人在线订阅。凭据轮换沿用身份标识和历史，旧凭据失效。撤销后保留统计历史。管理器先检查候选配置，再更新配置和身份清单；必要时保留受限权限快照，Xray 重启失败时尝试恢复原配置和原清单。</p>
+<p>为了中断已建立的超额连接，身份加入、启停、轮换和撤销等改变 Xray 配置的操作会短暂重启 Xray；其他连接需要重连。只改额度或计划且未改变转发状态时不重启。停用身份的订阅暂时不可用，恢复后沿用原地址。</p>
+
+    </section>
+
+    <section class="section" id="history">
+      <div class="section-head"><span class="section-num">06</span><h2>小时历史、连接筛选与导出</h2></div>
+<p>页面默认展示严格滚动的最近 86,400 秒，按北京时间整点切分。首尾小时通常不完整，因此一般为 25 个区间；恰好整点查询时为 24 个。近 7 天、近 30 天及自定义日期按自然日聚合。</p>
+<p>小时历史从 30 秒采样明细即时生成。每条明细包含结束时间、跨度和上传 / 下载增量；先裁剪到查询窗口，再按各小时的时间重叠比例分配，采用累计比例的整数差值，保证完整区间内字节守恒。</p>
+<pre><code class="language-text">分配字节 = floor(样本字节 × 右边界累计比例)
+         - floor(样本字节 × 左边界累计比例)
+</code></pre>
+<p>零跨度样本归入其时间戳所在小时。没有任何采样覆盖的小时标记 <code>observed = false</code>，页面显示“—”，CSV 数值留空。部分覆盖的小时只包含实际记录到的采样用量，不外推缺失流量。小时分布是基于采样的估计，不能还原采样间隔内每秒的真实速率。</p>
+<p>历史区域有独立连接筛选，连接行的“历史”按钮会选中该身份并定位历史区域，不改变总览筛选。总览筛选仍可同步历史筛选。CSV 沿用当前连接、时间范围和小时 / 天粒度，使用 UTF-8 BOM，并转义可能被表格软件视为公式的名称。</p>
+<p>历史查询采用参数化 SQL，校验身份和日期范围；日查询的结束日不得早于开始日，首尾日期差不得超过 3660 天。小时查询流式读取样本，每个身份构造约 25 个区间；表格分页展示，图表合并当前选中身份。</p>
+
+    </section>
+
+    <section class="section" id="resources">
+      <div class="section-head"><span class="section-num">07</span><h2>服务器资源展示</h2></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>指标</th>
+<th>计算口径</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CPU 占用率</td>
+<td><code>(总 ticks 增量 - 空闲 ticks 增量) / 总 ticks 增量 × 100%</code>；空闲包括 idle 和 iowait。</td>
+<td><code>/proc/stat</code> 前 8 项，避免重复计入 guest。</td>
+</tr>
+<tr>
+<td>内存占用率</td>
+<td><code>(MemTotal - MemAvailable) / MemTotal × 100%</code>。</td>
+<td><code>/proc/meminfo</code>；无 MemAvailable 时回退到 free + buffers + cached。</td>
+</tr>
+<tr>
+<td>磁盘占用率</td>
+<td>根分区 <code>used / total × 100%</code>。</td>
+<td><code>shutil.disk_usage(&quot;/&quot;)</code>；不合并其他挂载点。</td>
+</tr>
+</tbody></table></div>
+<p>采集器约每 5 秒写入最新指标，浏览器在页面可见时约每 5 秒读取。快照超过 20 秒或时间异常时 <code>available = false</code>，页面显示不可用，不将缺失数据显示成 0%。CPU 的首次采样使用短间隔获取差值。</p>
+<p>资源卡在桌面侧栏底部显示，手机移到页面底部。当前只保存最新资源快照，没有 CPU、内存或磁盘的历史曲线。</p>
+
+    </section>
+
+    <section class="section" id="storage">
+      <div class="section-head"><span class="section-num">08</span><h2>数据模型与保留策略</h2></div>
+<p>数据库为 <code>/var/lib/vpn-traffic/traffic.sqlite3</code>，schema 版本为 3。数据库使用回滚日志模式和完整同步；Web 的只读事务提供查询快照，避免依赖只读挂载下无法创建的 WAL 共享文件。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>表</th>
+<th>关键内容</th>
+<th>保留规则</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>devices</code></td>
+<td><code>email</code>、名称、转发状态、累计、原始计数、代际、采样时间、速率。</td>
+<td>累计及历史身份保留。</td>
+</tr>
+<tr>
+<td><code>daily</code></td>
+<td><code>(day, email)</code> 主键及上传、下载日汇总。</td>
+<td>长期保留。</td>
+</tr>
+<tr>
+<td><code>samples</code></td>
+<td>时间戳、身份、上传 / 下载增量和采样跨度。</td>
+<td>约 30 天；定期清理。</td>
+</tr>
+<tr>
+<td><code>limits</code></td>
+<td>基础额度、临时额度、本期上传 / 下载、手工启用和停用原因。</td>
+<td>当前周期状态持久化。</td>
+</tr>
+<tr>
+<td><code>reset_schedule</code></td>
+<td><code>id = 1</code> 的全局计划、周期起点和下次重置时间。</td>
+<td>系统唯一计划。</td>
+</tr>
+<tr>
+<td><code>allowance_operations</code></td>
+<td>请求标识、身份、临时加额参数。</td>
+<td>当前实现未设置定期清理。</td>
+</tr>
+<tr>
+<td><code>events</code></td>
+<td>Xray 重启及管理事件。</td>
+<td>约一年；定期清理。</td>
+</tr>
+<tr>
+<td><code>meta</code></td>
+<td>启用时间、采集 / 管理健康状态、错误和最新资源 JSON。</td>
+<td>状态键覆盖更新。</td>
+</tr>
+</tbody></table></div>
+<p><code>samples_time</code> 和 <code>samples_identity_time</code> 索引支持时间及单身份查询。小时历史查询不新增小时账本，也不修改配额。旧版独立重置设置迁移到全局计划；若旧设置全部一致则沿用，否则采用默认每月 1 日 00:00，既有额度和已用量保留。</p>
+
+    </section>
+
+    <section class="section" id="api">
+      <div class="section-head"><span class="section-num">09</span><h2>HTTP API 与访问控制</h2></div>
+<p>下表路径相对于 <code>/traffic/</code>，例如外部 <code>/traffic/api/summary</code> 转发到后端 <code>/api/summary</code>。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>方法与路径</th>
+<th>用途及主要参数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /api/summary</code></td>
+<td>连接汇总、额度、全局计划和采集状态。</td>
+</tr>
+<tr>
+<td><code>GET /api/history?view=hourly&amp;device=&lt;id&gt;</code></td>
+<td>最近 24 小时；省略 device 表示全部。</td>
+</tr>
+<tr>
+<td><code>GET /api/history?view=daily&amp;from=YYYY-MM-DD&amp;to=YYYY-MM-DD&amp;device=&lt;id&gt;</code></td>
+<td>按天查询；省略 view 默认 daily。</td>
+</tr>
+<tr>
+<td><code>GET /api/export.csv</code></td>
+<td>与历史查询共用参数和统计口径。</td>
+</tr>
+<tr>
+<td><code>GET /api/system</code></td>
+<td>最新资源值、采样时间和 available 状态。</td>
+</tr>
+<tr>
+<td><code>GET /api/health</code></td>
+<td>流量采集及管理器健康；异常返回 503，资源新鲜度单独查询。</td>
+</tr>
+<tr>
+<td><code>GET /api/session</code></td>
+<td>获取管理请求需要的 CSRF token。</td>
+</tr>
+<tr>
+<td><code>GET /api/settings</code></td>
+<td>查询系统月度重置计划。</td>
+</tr>
+<tr>
+<td><code>POST /api/settings</code></td>
+<td><code>reset_day</code>、<code>reset_time</code>；更改系统计划。</td>
+</tr>
+<tr>
+<td><code>POST /api/links</code></td>
+<td>新建连接；<code>label</code>、<code>quota</code>、<code>enabled</code>、<code>request_id</code>。</td>
+</tr>
+<tr>
+<td><code>POST /api/links/&lt;id&gt;/update</code></td>
+<td>修改名称、额度或手工启用状态。</td>
+</tr>
+<tr>
+<td><code>POST /api/links/&lt;id&gt;/bonus</code></td>
+<td><code>amount</code>、<code>request_id</code>；临时增加可用流量。</td>
+</tr>
+<tr>
+<td><code>POST /api/links/&lt;id&gt;/reset</code></td>
+<td>清零该身份本期用量。</td>
+</tr>
+<tr>
+<td><code>POST /api/links/&lt;id&gt;/rotate</code></td>
+<td>轮换连接凭据。</td>
+</tr>
+<tr>
+<td><code>POST /api/links/&lt;id&gt;/revoke</code></td>
+<td>撤销连接。</td>
+</tr>
+<tr>
+<td><code>GET /api/links/&lt;id&gt;/sharing</code></td>
+<td>管理员主动查看 VLESS 及私人订阅链接。</td>
+</tr>
+</tbody></table></div>
+<p>额度和流量字段使用整数字节，页面及 CLI 可按 GiB 换算，<code>1 GiB = 1024³ B</code>。身份级请求中的独立重置日期或时间被拒绝。常见错误包括输入无效 400、未登录 401、同源或 CSRF 失败 403、路径不存在 404、后端暂不可用 503。</p>
+<p>外部请求通过现有 HTTPS 和 Nginx Basic 登录认证。后端只监听回环地址；管理 POST 还校验精确 Origin、<code>X-VPN-CSRF</code>、JSON 类型与 16 KiB 请求体上限。Nginx 不向后端传递 Basic Authorization，关闭此位置的访问日志。响应带 CSP、nosniff、禁止嵌入和禁止缓存等约束。</p>
+<p>特权操作仅经过 Unix 套接字，权限为 <code>root:vpn-traffic / 660</code>，管理器使用 <code>SO_PEERCRED</code> 校验调用者为 root 或应用 UID。连接客户端只在发送前对套接字尚未就绪进行重试，不自动重发已经发送的修改。</p>
+<p>当前为单管理员模型，没有账户自助门户或多管理员角色隔离。汇总和历史接口不返回 UUID、订阅令牌或私钥；分享接口会向已登录管理员返回所选连接凭据，应按私人资料保存。</p>
+
+    </section>
+
+    <section class="section" id="operations">
+      <div class="section-head"><span class="section-num">10</span><h2>打包、部署与维护</h2></div>
+<h3>构建和安装</h3>
+<pre><code class="language-sh">python3 -m unittest discover -s tests -v
+python3 build.py --output dist
+dpkg-deb --info dist/vpn-traffic_1.3.0_all.deb
+cd dist
+sha256sum -c vpn-traffic_1.3.0_all.deb.sha256
+sudo apt install ./vpn-traffic_1.3.0_all.deb
+sudo vpn-traffic web-password
+</code></pre>
+<p>安装脚本创建应用用户、检查现有部署、生成或保留登录信息、接入统计 API 和网页路由、验证服务单元并启动三个服务。首次启用统计配置可能重启 Xray；升级是否重启取决于 Xray 配置是否发生变化。升级沿用数据库和登录密码。安装前配置快照位于 <code>/var/backups/vpn-traffic/before-*</code>。</p>
+<p>网页地址为 <code>https://&lt;服务器IP&gt;:8443/traffic/</code>。登录信息在 <code>/etc/vpn-traffic/web-access.json</code>，root / 600；密码散列位于 <code>/etc/vpn-traffic/htpasswd</code>，root:www-data / 640。常规配置位于 <code>/etc/vpn-traffic/config.json</code>，数据库由 vpn-traffic 所有、权限 600。真实密码和部署清单不进入 Git。</p>
+<h3>日常命令</h3>
+<pre><code class="language-sh">sudo vpn-traffic status
+sudo vpn-traffic show
+sudo vpn-traffic schedule-update --reset-day 15 --reset-time 09:30
+sudo vpn-traffic link-create --label &quot;家人手机&quot; --quota-gib 20
+sudo vpn-traffic link-update --device link-xxx --quota-gib 50
+sudo vpn-traffic link-bonus --device link-xxx --amount-gib 5
+sudo vpn-traffic history --from 2026-11-01 --to 2026-11-07 --device link-xxx
+sudo vpn-traffic export --from 2026-11-01 --to 2026-11-07 --output /root/traffic.csv
+systemctl status vpn-traffic-collector vpn-traffic-manager vpn-traffic-web --no-pager
+journalctl -u vpn-traffic-collector -u vpn-traffic-manager -u vpn-traffic-web -n 50 --no-pager
+curl -fsS http://127.0.0.1:9081/api/health
+</code></pre>
+<p>CLI 的 <code>history</code> 和 <code>export</code> 当前使用按天查询；小时视图通过网页或 HTTP API 查询。CLI 中查看密码和分享链接的输出含凭据，按私人资料处理。</p>
+<h3>备份、恢复和卸载</h3>
+<pre><code class="language-sh">sudo vpn-traffic backup --output /var/backups/vpn-traffic/traffic.sqlite3
+sudo /root/xray-deployment/backup.sh
+</code></pre>
+<p>第一条使用 SQLite 在线备份获得一致性副本；第二条为已有完整部署备份，集成后也包含一致性数据库、应用、配置和服务单元。完整归档含登录信息和服务端材料，存放在受保护目录。</p>
+<p>恢复前先备份当前状态，安装相同或更新版本的 deb，停止三个应用服务，再恢复可信数据库并修正所有者和权限。不得在服务运行时直接替换数据库；恢复历史备份会回退本期用量和额度状态，需要核对。操作示例见项目 README。</p>
+<p><code>sudo apt remove vpn-traffic</code> 停止服务、撤除本包网页路由及统计集成；数据库、登录信息和备份保留，包括 purge 时。仅恢复仍与本包设置一致的 Xray 字段，避免覆盖后续人工修改。</p>
+
+    </section>
+
+    <section class="section" id="verification">
+      <div class="section-head"><span class="section-num">11</span><h2>验证依据与实现边界</h2></div>
+<p>仓库的 37 项 <code>unittest</code> 在 Ubuntu 24.04 环境通过，覆盖计数去重、重启保留、午夜分摊、全局周期、临时额度及幂等、管理校验、小时窗口、单身份过滤、未采集区间、CSV 和资源指标。1.3.0 Debian 安装包已成功构建。</p>
+<p>原部署验收还验证过 HTTPS 认证、网页新增及额度管理、小时与天视图、独立历史筛选、小时 CSV、桌面资源卡和 390×844 手机布局。私人交付目录保留当时的验收记录与截图；项目文档不将当时的资源快照作为当前服务器状态。</p>
+<p><code>tests/test_*.py</code> 在临时数据库及模拟对象上运行。<code>verify_*.py</code>、<code>qa_*.cjs</code> 和清理脚本为分版本的现场验收工具，部分修改连接状态，运行前应检查目标、版本和配置；浏览器脚本的 Playwright 路径也需按环境调整。</p>
+<p>主要边界包括：采样明细约保留 30 天、更早小时分布无法恢复；资源仅保留最新值；突发故障可能漏记尾段流量；额度轮询可能产生少量超额；改变转发状态会短暂重启 Xray。当前实现面向单台服务器，部署路径、8443 HTTPS 入口及 10085 / 9081 回环端口具有约定，不包含跨服务器聚合或任意面板的自动适配。</p>
+<p>维护技术方案时，应结合 <code>app/</code>、<code>packaging/</code> 和测试同步更新 Markdown 与离线 HTML；部署现场的账号、数据库和验收快照继续保存在仓库外。</p>
+
+    </section>
+    <footer class="footer">VPN Traffic 1.3.0 · 项目技术文档<br>单文件 HTML · 支持离线阅读与打印 / 保存 PDF</footer>
+  </main>
+</div>
+<script>
+  (() => {
+    const root = document.documentElement;
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) {
+      themeSelect.value = root.dataset.theme || 'apricot';
+      themeSelect.closest('.theme-control').hidden = false;
+      themeSelect.addEventListener('change', () => {
+        root.dataset.theme = themeSelect.value;
+        try {
+          const key = 'rtd-html-docs:theme:' + (root.dataset.documentId || location.pathname);
+          localStorage.setItem(key, themeSelect.value);
+        } catch (_) { /* Keep the choice for this visit when storage is blocked. */ }
+      });
+    }
+    const printButton = document.getElementById('print-button');
+    if (printButton) printButton.addEventListener('click', () => window.print());
+    let printState = null;
+    window.addEventListener('beforeprint', () => {
+      if (printState) return;
+      printState = Array.from(document.querySelectorAll('details'), item => [item, item.open]);
+      printState.forEach(([item]) => { item.open = true; });
+    });
+    window.addEventListener('afterprint', () => {
+      if (!printState) return;
+      printState.forEach(([item, wasOpen]) => { item.open = wasOpen; });
+      printState = null;
+    });
+    const links = Array.from(document.querySelectorAll('.sidebar nav a'));
+    const sections = Array.from(document.querySelectorAll('main > section[id]'));
+    let scheduled = false;
+    function syncDirectory() {
+      scheduled = false;
+      if (!sections.length) return;
+      let current = sections[0];
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= Math.min(160, innerHeight * .25)) current = section;
+        else break;
+      }
+      links.forEach(link => {
+        const active = link.getAttribute('href') === '#' + current.id;
+        link.classList.toggle('active', active);
+        if (active) link.setAttribute('aria-current', 'location');
+        else link.removeAttribute('aria-current');
+      });
+    }
+    function scheduleDirectory() {
+      if (!scheduled) { scheduled = true; requestAnimationFrame(syncDirectory); }
+    }
+    window.addEventListener('scroll', scheduleDirectory, { passive: true });
+    window.addEventListener('resize', scheduleDirectory);
+    window.addEventListener('load', scheduleDirectory);
+    syncDirectory();
+  })();
+</script>
+</body>
+</html>
