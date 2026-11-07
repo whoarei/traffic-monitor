@@ -4,7 +4,7 @@
 
 ## 控制台界面
 
-v1.5.0 沿用深色控制台、青蓝色趋势图和额度监测面板；侧栏选中项使用低对比度底色，没有左侧亮色竖线。手机上连接用量重排为卡片，保留全部统计字段和管理入口。
+v1.5.1 沿用深色控制台、青蓝色趋势图和额度监测面板；侧栏选中项使用低对比度底色，没有左侧亮色竖线。手机上连接用量重排为卡片，保留全部统计字段和管理入口。
 
 ![VPN Traffic 深色控制台，图中为隔离演示数据](docs/images/dashboard.png)
 
@@ -26,8 +26,8 @@ v1.5.0 沿用深色控制台、青蓝色趋势图和额度监测面板；侧栏�
 - `/usr/local/sbin/xray-subscription` 及 `/etc/nginx/sites-available/xray-subscription.conf`，已配置 HTTPS 8443。
 
 ```sh
-sha256sum -c vpn-traffic_1.5.0_all.deb.sha256
-sudo apt install ./vpn-traffic_1.5.0_all.deb
+sha256sum -c vpn-traffic_1.5.1_all.deb.sha256
+sudo apt install ./vpn-traffic_1.5.1_all.deb
 sudo vpn-traffic web-password
 ```
 
@@ -37,7 +37,7 @@ sudo vpn-traffic web-password
 
 ## 在线升级
 
-首次部署 v1.5.0 后，侧栏“系统升级”可检查公开 GitHub Release 的签名清单并安装更高版本，查看独立任务的进度和日志。升级前保存恢复包、数据库和配置；兼容情况下失败自动恢复旧代码与配置，保留当前流量数据库。首次从旧版迁移及人工恢复方式见 [在线升级与失败恢复](docs/updating.md)。
+首次部署 v1.5.1 后，侧栏“系统升级”可检查公开 GitHub Release 的签名清单并安装更高版本，查看独立任务的进度和日志。升级前保存恢复包、数据库和配置；兼容情况下失败自动恢复旧代码与配置，保留当前流量数据库。首次从旧版迁移及人工恢复方式见 [在线升级与失败恢复](docs/updating.md)。
 
 ## 查询与维护
 

@@ -1,6 +1,6 @@
 # 在线升级与失败恢复
 
-适用版本：VPN Traffic 1.5.0。
+适用版本：VPN Traffic 1.5.1。
 
 安装格式继续使用 deb。发布源为公开的 `whoarei/traffic-monitor` GitHub Release；服务器使用 HTTPS 下载，不保存 GitHub 访问令牌。发布流程仍不自动操作服务器，安装由管理员从页面或命令行触发。
 
@@ -82,7 +82,7 @@ GitHub Actions 的发布 job 使用 `VPN_TRAFFIC_SIGNING_KEY` Secret 签名，�
 ```sh
 sudo vpn-traffic-updater seed --package /path/to/current-installed.deb --sha256 <可信SHA256>
 sudo vpn-traffic-updater check
-sudo vpn-traffic-updater start --version 1.5.0
+sudo vpn-traffic-updater start --version 1.5.1
 sudo vpn-traffic-updater status
 ```
 

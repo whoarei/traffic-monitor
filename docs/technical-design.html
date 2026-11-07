@@ -675,7 +675,7 @@
       button { display: none; }
       .footer { font-size: 8pt; }
     }
-  
+
     .brand { overflow-wrap: anywhere; }
   </style>
 </head>
@@ -701,7 +701,7 @@
     </nav>
     <div class="foot">
       <div class="theme-control" hidden><label for="theme-select">文档配色</label><select id="theme-select"><optgroup label="经典配色"><option value="classic">经典蓝</option><option value="slate">石墨灰</option><option value="forest">森林绿</option></optgroup><optgroup label="亮色配色"><option value="sky">蓝色 · 亮色</option><option value="mint">绿色 · 亮色</option><option value="yellow">黄色 · 亮色</option><option value="pink">粉色 · 亮色</option><option value="apricot" selected>橙色 · 默认</option><option value="lavender">紫色 · 亮色</option></optgroup><optgroup label="深色配色"><option value="dark">深色</option></optgroup></select></div>
-      更新于 2026-11-07<br>版本 1.5.0<br>单文件 HTML · 支持离线阅读
+      更新于 2026-11-07<br>版本 1.5.1<br>单文件 HTML · 支持离线阅读
       <button type="button" id="print-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7zM17 11h.01"/></svg>打印 / 保存 PDF</button>
     </div>
   </aside>
@@ -709,7 +709,7 @@
     <header class="hero">
       <div class="eyebrow">项目技术方案 / Debian · Ubuntu</div>
       <h1>VPN Traffic 技术方案</h1>
-      <p class="lead">按连接身份统计流量，统一执行月度重置和临时加额，并提供历史查询与服务器资源展示。</p><p>本文依据仓库 1.5.0 源码整理。<a href="technical-design.md">Markdown 版本</a>适合在 GitHub 中阅读；本文件可离线打开。部署账号和现场验收资料另行私人保存。</p>
+      <p class="lead">按连接身份统计流量，统一执行月度重置和临时加额，并提供历史查询与服务器资源展示。</p><p>本文依据仓库 1.5.1 源码整理。<a href="technical-design.md">Markdown 版本</a>适合在 GitHub 中阅读；本文件可离线打开。部署账号和现场验收资料另行私人保存。</p>
     </header>
     <section class="section" id="scope">
       <div class="section-head"><span class="section-num">01</span><h2>目标与适用范围</h2></div>
@@ -1036,10 +1036,10 @@ B = bonus                        本期临时额度
 <h3>构建和安装</h3>
 <pre><code class="language-sh">python3 -m unittest discover -s tests -v
 python3 build.py --output dist
-dpkg-deb --info dist/vpn-traffic_1.5.0_all.deb
+dpkg-deb --info dist/vpn-traffic_1.5.1_all.deb
 cd dist
-sha256sum -c vpn-traffic_1.5.0_all.deb.sha256
-sudo apt install ./vpn-traffic_1.5.0_all.deb
+sha256sum -c vpn-traffic_1.5.1_all.deb.sha256
+sudo apt install ./vpn-traffic_1.5.1_all.deb
 sudo vpn-traffic web-password
 </code></pre>
 <p>安装脚本创建应用用户、检查现有部署、生成或保留登录信息、接入统计 API 和网页路由、验证服务单元并启动三个服务。首次启用统计配置可能重启 Xray；升级是否重启取决于 Xray 配置是否发生变化。升级沿用数据库和登录密码。安装前配置快照位于 <code>/var/backups/vpn-traffic/before-*</code>。</p>
@@ -1069,15 +1069,15 @@ sudo /root/xray-deployment/backup.sh
 <p>应用及安装包版本统一由 <code>app/version.py</code> 定义。普通提交和 Pull Request 自动进行语法检查、单元测试、deb 构建及附件校验；推送与代码版本相同的 <code>vMAJOR.MINOR.PATCH</code> 标签时，检查全部通过后自动发布 GitHub Release。附件包括 deb、SHA256、当前提交的源码归档及技术方案的 Markdown / HTML 版本。</p>
 <p>正式发布先准备草稿，上传全部附件后再公开；已发布的同名版本不会覆盖。分支构建仅有仓库读取权限，标签发布 job 使用内置令牌获得 Release 所需写权限，不使用服务器凭据，也不自动部署。发布步骤与重试方法见 <a href="releasing.md">CI 与版本发布</a>。</p>
 <h3>签名在线升级</h3>
-<p>1.5.0 保留 deb，增加 Ed25519 签名清单及独立升级服务。网页提供检查更新、指定版本安装、阶段进度、日志和结果；独立只读状态接口在网页服务重启时继续运行，并沿用 HTTPS Basic 登录。安装前验证发布源、兼容性、包元数据、大小和 SHA256，保存可信旧包、SQLite 一致性备份与固定配置快照。</p>
+<p>1.5.1 保留 deb，增加 Ed25519 签名清单及独立升级服务。网页提供检查更新、指定版本安装、阶段进度、日志和结果；独立只读状态接口在网页服务重启时继续运行，并沿用 HTTPS Basic 登录。安装前验证发布源、兼容性、包元数据、大小和 SHA256，保存可信旧包、SQLite 一致性备份与固定配置快照。</p>
 <p>任务代码和状态独立持久化，关闭页面或重启后可继续核对或恢复。失败时仅在数据结构兼容的条件下自动恢复旧代码和配置，不用旧数据库覆盖新记账流量；不兼容时保留维护锁并报告人工处理。公开 Release 下载不需要 GitHub 令牌。流程、权限、路径与首次迁移详见 <a href="updating.md">在线升级与失败恢复</a>。</p>
 
     </section>
 
     <section class="section" id="verification">
       <div class="section-head"><span class="section-num">11</span><h2>验证依据与实现边界</h2></div>
-<p>仓库的 37 项 <code>unittest</code> 在 Ubuntu 24.04 环境通过，覆盖计数去重、重启保留、午夜分摊、全局周期、临时额度及幂等、管理校验、小时窗口、单身份过滤、未采集区间、CSV 和资源指标。1.5.0 Debian 安装包已成功构建。</p>
-<p>CI 另包含 4 项发布校验测试。1.5.0 新增升级故障注入和 HTTP 权限测试，完整 Python 测试集为 81 项，覆盖签名、过期、重放、包校验、并发幂等、安装和健康失败、SQLite 用量保留、进程中断与人工恢复边界。</p>
+<p>仓库的 37 项 <code>unittest</code> 在 Ubuntu 24.04 环境通过，覆盖计数去重、重启保留、午夜分摊、全局周期、临时额度及幂等、管理校验、小时窗口、单身份过滤、未采集区间、CSV 和资源指标。1.5.1 Debian 安装包已成功构建。</p>
+<p>CI 另包含 4 项发布校验测试。1.5.1 新增升级故障注入和 HTTP 权限测试，完整 Python 测试集为 82 项，覆盖签名、过期、重放、包校验、并发幂等、安装和健康失败、SQLite 用量保留、进程中断与人工恢复边界。</p>
 <p>1.4.0 新增 <code>tests/qa_dashboard.cjs</code> 浏览器回归，以本地内存 API 夹具在原有 CSP 下运行，不访问真实 VPN。覆盖移除侧栏亮色边、小时/天/自定义范围、独立连接筛选、CSV、采样缺口、分页、新增与分享、复制、编辑与本期重置、临时加额恢复、手工停用保留、统一计划、CSRF 更新、资源过期、恶意名称文本化和空状态；检查 1440、1024、768、390、320 像素宽度及手机弹窗。Playwright 仅为开发及 CI 依赖，不引入运行时 Node.js 依赖。</p>
 <p>原部署验收还验证过 HTTPS 认证、网页新增及额度管理、小时与天视图、独立历史筛选、小时 CSV、桌面资源卡和 390×844 手机布局。私人交付目录保留当时的验收记录与截图；项目文档不将当时的资源快照作为当前服务器状态。</p>
 <p><code>tests/test_*.py</code> 在临时数据库及模拟对象上运行，<code>qa_dashboard.cjs</code> 使用独立内存夹具。其余 <code>verify_*.py</code>、旧版 <code>qa_*.cjs</code> 和清理脚本为分版本的现场验收工具，部分修改连接状态，运行前应检查目标、版本和配置；旧版浏览器脚本的 Playwright 路径也需按环境调整。</p>
@@ -1085,7 +1085,7 @@ sudo /root/xray-deployment/backup.sh
 <p>维护技术方案时，应结合 <code>app/</code>、<code>packaging/</code> 和测试同步更新 Markdown 与离线 HTML；部署现场的账号、数据库和验收快照继续保存在仓库外。</p>
 
     </section>
-    <footer class="footer">VPN Traffic 1.5.0 · 项目技术文档<br>单文件 HTML · 支持离线阅读与打印 / 保存 PDF</footer>
+    <footer class="footer">VPN Traffic 1.5.1 · 项目技术文档<br>单文件 HTML · 支持离线阅读与打印 / 保存 PDF</footer>
   </main>
 </div>
 <script>
