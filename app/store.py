@@ -7,9 +7,9 @@ from pathlib import Path
 import sqlite3
 import time
 from zoneinfo import ZoneInfo
+from version import VERSION
 
 TZ = ZoneInfo("Asia/Shanghai")
-VERSION = "1.3.0"
 
 
 def reset_bounds(day, clock, now=None):

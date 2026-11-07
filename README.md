@@ -1,4 +1,4 @@
-# VPN Traffic 1.3.0
+# VPN Traffic
 
 为现有 Xray VLESS + REALITY 和 HTTPS 私人订阅部署提供每身份流量统计、历史记录、网页新增连接和月度配额管理。安装包为 `Architecture: all`，应用仅使用 Python 标准库；不包含服务器凭据，也不安装 Xray 本身。
 
@@ -6,6 +6,7 @@
 
 - [技术方案说明](docs/technical-design.md)：整体架构、流量账本、统一月度重置、临时加额、历史查询、数据模型、API、部署和维护。
 - [离线 HTML 技术方案](docs/technical-design.html)：下载后用浏览器打开，支持目录导航、配色切换和打印 / 保存 PDF。
+- [CI 与版本发布](docs/releasing.md)：自动检查、版本标签及 GitHub Release 附件。
 
 ## 安装
 
@@ -126,11 +127,27 @@ sudo systemctl start vpn-traffic-collector vpn-traffic-manager vpn-traffic-web
 ```sh
 python3 -m unittest discover -s tests -v
 python3 build.py --output dist
-dpkg-deb --info dist/vpn-traffic_1.3.0_all.deb
+version=$(python3 scripts/check_version.py)
+dpkg-deb --info "dist/vpn-traffic_${version}_all.deb"
 ```
 
 `tests/test_*.py` 使用临时数据库和模拟对象，可以在开发环境运行。`tests/verify_*.py`、`tests/qa_*.cjs` 及 `cleanup_fixtures.py` 是原部署的分版本验收工具，部分会创建、调整或撤销连接；运行前需检查适用版本并修改目标环境。浏览器验收脚本还需要 Playwright，并使用原工作站的依赖路径。
 
 `build_technical_document.py` 提供 HTML 技术文档生成逻辑。`build_deliverables.py` 用于原部署工作区的私人交付，依赖仓库外的 `.work/<服务器>/` 和 `deliverables/<服务器>/`，会生成含登录凭据的私人资料，不能将这些输出发布到仓库。源码仓库只保存程序、打包配置、测试和说明；数据库、服务器清单、登录信息及构建产物均应保存在仓库外。
+
+## 自动发布
+
+普通分支提交、Pull Request 和手动运行会执行语法检查、单元测试、deb 构建和校验，并保留 14 天构建附件。版本号统一在 `app/version.py` 定义。
+
+发布时修改版本号、提交代码和文档，再推送同名的 `v主版本.次版本.修订版本` 标签，例如：
+
+```sh
+# 将 app/version.py 中的 VERSION 改为 1.3.1，提交对应代码和文档后：
+git push origin main
+git tag -a v1.3.1 -m "VPN Traffic 1.3.1"
+git push origin v1.3.1
+```
+
+标签与代码版本必须一致。测试和构建全部通过后，GitHub Actions 自动发布 [GitHub Release](https://github.com/whoarei/traffic-monitor/releases)，附带 deb、SHA256、源码包和技术文档；失败时不发布正式版本。完整说明见 [CI 与版本发布](docs/releasing.md)。
 
 参考：[Xray 统计](https://xtls.github.io/en/config/stats.html)、[StatsService API](https://xtls.github.io/en/config/api.html)。

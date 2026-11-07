@@ -13,8 +13,9 @@ import tarfile
 import urllib.request
 import zipfile
 
+from app.version import VERSION
+
 ROOT=Path(__file__).resolve().parent
-VERSION='1.3.0'
 
 
 def main():

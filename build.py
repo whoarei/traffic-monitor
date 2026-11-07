@@ -6,7 +6,8 @@ import shutil
 import subprocess
 import tempfile
 
-VERSION = "1.3.0"
+from app.version import VERSION
+
 ROOT = Path(__file__).resolve().parent
 
 
