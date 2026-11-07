@@ -1,6 +1,6 @@
 # VPN Traffic 技术方案
 
-适用版本：1.4.0 · 更新日期：2026-11-07
+适用版本：1.5.0 · 更新日期：2026-11-07
 
 本文说明 `traffic-monitor` 的整体实现、统计口径、月度额度、接口、部署和维护方法。配套的 [离线 HTML 版本](technical-design.html) 包含目录、配色切换及打印 / 保存 PDF 功能。本文依据仓库源码整理；原服务器的账号、实时状态和私人验收附件保存在交付工作区。
 
@@ -189,10 +189,10 @@ B = bonus                        本期临时额度
 ```sh
 python3 -m unittest discover -s tests -v
 python3 build.py --output dist
-dpkg-deb --info dist/vpn-traffic_1.4.0_all.deb
+dpkg-deb --info dist/vpn-traffic_1.5.0_all.deb
 cd dist
-sha256sum -c vpn-traffic_1.4.0_all.deb.sha256
-sudo apt install ./vpn-traffic_1.4.0_all.deb
+sha256sum -c vpn-traffic_1.5.0_all.deb.sha256
+sudo apt install ./vpn-traffic_1.5.0_all.deb
 sudo vpn-traffic web-password
 ```
 
@@ -237,11 +237,17 @@ sudo /root/xray-deployment/backup.sh
 
 正式发布先准备草稿，上传全部附件后再公开；已发布的同名版本不会覆盖。分支构建仅有仓库读取权限，标签发布 job 使用内置令牌获得 Release 所需写权限，不使用服务器凭据，也不自动部署。发布步骤与重试方法见 [CI 与版本发布](releasing.md)。
 
+### 签名在线升级
+
+1.5.0 保留 deb，增加 Ed25519 签名清单及独立升级服务。网页提供检查更新、指定版本安装、阶段进度、日志和结果；独立只读状态接口在网页服务重启时继续运行，并沿用 HTTPS Basic 登录。安装前验证发布源、兼容性、包元数据、大小和 SHA256，保存可信旧包、SQLite 一致性备份与固定配置快照。
+
+任务代码和状态独立持久化，关闭页面或重启后可继续核对或恢复。失败时仅在数据结构兼容的条件下自动恢复旧代码和配置，不用旧数据库覆盖新记账流量；不兼容时保留维护锁并报告人工处理。公开 Release 下载不需要 GitHub 令牌。流程、权限、路径与首次迁移详见 [在线升级与失败恢复](updating.md)。
+
 ## 验证依据与实现边界
 
-仓库的 37 项 `unittest` 在 Ubuntu 24.04 环境通过，覆盖计数去重、重启保留、午夜分摊、全局周期、临时额度及幂等、管理校验、小时窗口、单身份过滤、未采集区间、CSV 和资源指标。1.4.0 Debian 安装包已成功构建。
+仓库的 37 项 `unittest` 在 Ubuntu 24.04 环境通过，覆盖计数去重、重启保留、午夜分摊、全局周期、临时额度及幂等、管理校验、小时窗口、单身份过滤、未采集区间、CSV 和资源指标。1.5.0 Debian 安装包已成功构建。
 
-CI 另增加 4 项发布校验测试，检查标签一致性、版本格式及错误标签的命令行拒绝行为；完整测试集共 41 项。
+CI 另包含 4 项发布校验测试。1.5.0 新增升级故障注入和 HTTP 权限测试，完整 Python 测试集为 81 项，覆盖签名、过期、重放、包校验、并发幂等、安装和健康失败、SQLite 用量保留、进程中断与人工恢复边界。
 
 1.4.0 新增 `tests/qa_dashboard.cjs` 浏览器回归，以本地内存 API 夹具在原有 CSP 下运行，不访问真实 VPN。覆盖移除侧栏亮色边、小时/天/自定义范围、独立连接筛选、CSV、采样缺口、分页、新增与分享、复制、编辑与本期重置、临时加额恢复、手工停用保留、统一计划、CSRF 更新、资源过期、恶意名称文本化和空状态；检查 1440、1024、768、390、320 像素宽度及手机弹窗。Playwright 仅为开发及 CI 依赖，不引入运行时 Node.js 依赖。
 

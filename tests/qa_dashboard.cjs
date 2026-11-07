@@ -10,7 +10,7 @@ fs.mkdirSync(output,{recursive:true});
   const base='http://127.0.0.1:'+server.address().port,errors=[];
   try{
     const context=await browser.newContext({viewport:{width:1440,height:1080},acceptDownloads:true});
-    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('403')&&!m.text().includes('503'))errors.push(m.text());});
+    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('403')&&!m.text().includes('503')&&!m.text().includes('400'))errors.push(m.text());});
     await page.goto(base);await page.waitForFunction(()=>document.getElementById('health').textContent==='采集正常'&&document.querySelectorAll('#devices-body tr').length===3);
     await page.waitForFunction(()=>document.querySelector('.sidebar [data-system-value="cpu"]').textContent==='17.4%');
     const nav=await page.locator('.nav-item.active').evaluate(el=>({shadow:getComputedStyle(el).boxShadow,before:getComputedStyle(el,'::before').content,left:getComputedStyle(el).borderLeftColor,right:getComputedStyle(el).borderRightColor}));
@@ -46,6 +46,13 @@ fs.mkdirSync(output,{recursive:true});
     await page.locator('[data-open-settings]').click();await page.fill('#schedule-day','15');await page.fill('#schedule-time','09:30');await page.locator('#save-settings').click();await page.waitForFunction(()=>!document.getElementById('settings-dialog').open&&document.getElementById('system-schedule').textContent.includes('15 日 09:30'));
     await page.locator('#new-link').click();await page.keyboard.press('Escape');assert.equal(await page.locator('#link-dialog').evaluate(el=>el.open),false);
     state.resourcesAvailable=false;await page.evaluate(()=>refreshSystem());assert.equal(await page.locator('.sidebar [data-system-value="cpu"]').textContent(),'—');state.resourcesAvailable=true;await page.evaluate(()=>refreshSystem());
+    await page.locator('#system-update').click();state.updateFailure='升级清单签名校验失败';await page.locator('#check-updates').click();await page.waitForFunction(()=>document.getElementById('update-error').textContent.includes('签名'));assert(await page.locator('#install-update').isDisabled());
+    state.updateFailure='';await page.locator('#check-updates').click();await page.waitForFunction(()=>!document.getElementById('install-update').disabled);assert.equal(await page.locator('#update-available').textContent(),'v1.6.0');assert(await page.locator('#update-trust').isVisible());
+    await page.screenshot({path:path.join(output,'signed-update-desktop.png')});page.once('dialog',dialog=>dialog.accept());await page.locator('#install-update').click();await page.waitForFunction(()=>document.getElementById('update-stage').textContent==='安装新版本');
+    const reads=state.summaryRequests;await page.evaluate(()=>refresh());assert.equal(state.summaryRequests,reads);
+    await page.locator('[data-close="updates-dialog"]').click();state.installedVersion='1.6.0';state.updateJob={...state.updateJob,state:'succeeded',progress:100,message:'升级完成',logs:[...state.updateJob.logs,{time:Date.now()/1000,message:'健康检查通过'}]};await page.evaluate(()=>refreshUpdateStatus());
+    await page.locator('#system-update').click();await page.waitForFunction(()=>document.getElementById('update-stage').textContent==='升级成功');assert.match(await page.locator('#update-log').textContent(),/健康检查通过/);assert(await page.locator('#reload-updated-page').isVisible());
+    state.updateJob={...state.updateJob,state:'rolled_back',error:'新版本健康检查失败',message:'已恢复上一版本，流量数据保留'};state.installedVersion='1.5.0';await page.evaluate(()=>refreshUpdateStatus());assert.equal(await page.locator('#update-stage').textContent(),'已恢复上一版本');assert.match(await page.locator('#update-error').textContent(),/健康检查失败/);await page.locator('[data-close="updates-dialog"]').click();
     const overflow=[];
     for(const width of [1440,1024,768,390,320]){
       await page.setViewportSize({width,height:900});await page.waitForTimeout(150);
@@ -56,6 +63,6 @@ fs.mkdirSync(output,{recursive:true});
     state.devices[0].label='<img src=x onerror="window.__xss=1">';await page.evaluate(()=>refresh());assert.equal(await page.evaluate(()=>window.__xss),undefined);assert.equal(await page.locator('#devices-body img').count(),0);
     state.devices.splice(0);await page.evaluate(()=>refresh());assert.match(await page.locator('#devices-body').textContent(),/暂无连接/);assert.match(await page.locator('#quota-overview').textContent(),/暂无连接/);
     assert.deepEqual(errors,[]);
-    const report={passed:true,noBrightNavigationEdge:true,samplingGapsPreserved:true,independentHistoryFilter:true,hourlyCsv:true,dailyAndCustomRanges:true,pagination:true,overviewFilter:true,temporaryAllowanceRestores:true,createAndSharing:true,csrfRefreshKeepsRequestId:true,editAndReset:true,manualDisabledRemainsDisabled:true,globalSchedule:true,mobileDialogs:true,resourcesDesktopAndMobile:true,staleResourcesExplicit:true,safeLabels:true,emptyState:true,viewports:[1440,1024,768,390,320],overflow,errors};fs.writeFileSync(path.join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+    const report={passed:true,signedUpdateCheck:true,invalidSignatureBlocked:true,backgroundUpgradeProgress:true,upgradeLogsAndRollbackResult:true,noBrightNavigationEdge:true,samplingGapsPreserved:true,independentHistoryFilter:true,hourlyCsv:true,dailyAndCustomRanges:true,pagination:true,overviewFilter:true,temporaryAllowanceRestores:true,createAndSharing:true,csrfRefreshKeepsRequestId:true,editAndReset:true,manualDisabledRemainsDisabled:true,globalSchedule:true,mobileDialogs:true,resourcesDesktopAndMobile:true,staleResourcesExplicit:true,safeLabels:true,emptyState:true,viewports:[1440,1024,768,390,320],overflow,errors};fs.writeFileSync(path.join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

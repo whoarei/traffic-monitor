@@ -110,6 +110,11 @@ jobs:
       RELEASE_TAG: ${{ github.ref_name }}
       RELEASE_VERSION: ${{ needs.build.outputs.version }}
     steps:
+      - name: Check out release signing tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Download tested build artifacts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -121,6 +126,25 @@ jobs:
         run: |
           sha256sum --check SHA256SUMS
           sha256sum --check "vpn-traffic_${RELEASE_VERSION}_all.deb.sha256"
+
+      - name: Sign update manifest with pinned release key
+        env:
+          VPN_TRAFFIC_SIGNING_KEY: ${{ secrets.VPN_TRAFFIC_SIGNING_KEY }}
+        run: |
+          trap 'rm -f "$RUNNER_TEMP/update-signing.pem"' EXIT
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          value = os.environ.get("VPN_TRAFFIC_SIGNING_KEY", "")
+          if not value:
+              raise SystemExit("VPN_TRAFFIC_SIGNING_KEY is not configured")
+          target = Path(os.environ["RUNNER_TEMP"]) / "update-signing.pem"
+          with os.fdopen(os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as output:
+              output.write(value)
+          PY
+          python3 scripts/create_update_manifest.py --directory dist --version "$RELEASE_VERSION" --private-key "$RUNNER_TEMP/update-signing.pem"
+          cd dist
+          sha256sum --check SHA256SUMS
 
       - name: Create or complete release
         run: |

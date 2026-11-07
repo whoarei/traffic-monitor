@@ -35,6 +35,9 @@ if [ -x /usr/bin/vpn-traffic ]; then
     usr/bin/vpn-traffic \\
     usr/lib/vpn-traffic \\
     usr/share/vpn-traffic \\
+    etc/systemd/system/vpn-traffic-updater.service \\
+    usr/local/sbin/vpn-traffic-updater \\
+    var/lib/vpn-traffic-updater \\
     var/backups/vpn-traffic/traffic.sqlite3
   do
     if [ -e "/$traffic_path" ]; then set -- "$@" "$traffic_path"; fi

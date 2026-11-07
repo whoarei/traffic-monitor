@@ -158,6 +158,9 @@ class Manager:
         return {"restarted": core_changed}
 
     def handle(self, request):
+        from updater_client import maintenance
+        if maintenance() and request.get("action") != "sharing":
+            raise ValueError("系统正在升级，连接管理暂时锁定")
         action = request.get("action")
         if action not in ("create", "update", "reset", "sharing", "rotate", "revoke", "schedule", "bonus"):
             raise ValueError("不支持的管理操作")

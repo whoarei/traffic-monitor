@@ -1,0 +1,29 @@
+[Unit]
+Description=Independent VPN Traffic signed release updater
+After=network-online.target
+Wants=network-online.target
+Before=vpn-traffic-web.service vpn-traffic-manager.service
+
+[Service]
+Type=simple
+User=root
+Group=vpn-traffic
+ExecStart=/usr/bin/python3 /var/lib/vpn-traffic-updater/runtime/updater.py serve
+Restart=on-failure
+RestartSec=3
+UMask=0077
+RuntimeDirectory=vpn-traffic-updater
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=restart
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=160M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

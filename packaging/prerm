@@ -8,6 +8,7 @@ case "$1" in
 esac
 case "$1" in
   remove|deconfigure)
+    systemctl disable --now vpn-traffic-updater.service || true
     systemctl disable vpn-traffic-web.service vpn-traffic-manager.service vpn-traffic-collector.service || true
     /usr/bin/vpn-traffic disable
     ;;

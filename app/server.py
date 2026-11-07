@@ -69,6 +69,9 @@ def run(config):
                 elif request.path == "/api/settings":
                     with store.database(config["database"],readonly=True) as db:
                         result=store.schedule(db)
+                elif request.path == "/api/updates/status":
+                    from updater_client import call
+                    result = call("status")
                 elif request.path.startswith("/api/links/") and request.path.endswith("/sharing"):
                     from manager_client import call
                     result = call("sharing", id=request.path[len("/api/links/"):-len("/sharing")])
@@ -112,6 +115,13 @@ def run(config):
                 if not isinstance(payload, dict):
                     raise ValueError("请求格式不正确")
                 route = urlsplit(self.path).path
+                if route in ("/api/updates/check", "/api/updates/start"):
+                    from updater_client import call
+                    result = call("check") if route.endswith("/check") else call("start", version=payload.get("version"), request_id=payload.get("request_id"))
+                    return self.respond(200, json.dumps(result, ensure_ascii=False).encode())
+                from updater_client import maintenance
+                if maintenance():
+                    return self.respond(423, json.dumps({"error":"系统正在升级，连接管理暂时锁定"}, ensure_ascii=False).encode())
                 from manager_client import call
                 if route == "/api/settings":
                     result=call("schedule",reset_day=payload.get("reset_day"),reset_time=payload.get("reset_time"))

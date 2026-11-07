@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#080d19">
   <title>VPN Traffic · 网络控制台</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=1.4.0">
-  <script src="app.js?v=1.4.0" defer></script>
+  <link rel="stylesheet" href="style.css?v=1.5.0">
+  <script src="app.js?v=1.5.0" defer></script>
 </head>
 <body>
   <svg class="icon-definitions" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -30,8 +30,8 @@
   <aside class="sidebar">
     <a class="brand" href="#overview"><span class="brand-mark"><svg class="icon"><use href="#icon-network"/></svg></span><span>VPN Traffic<small>NETWORK CONTROL</small></span></a>
     <div class="nav-label">WORKSPACE</div>
-    <nav aria-label="页面导航"><a href="#overview" class="nav-item active" aria-current="location"><svg class="icon"><use href="#icon-grid"/></svg>运行总览</a><a href="#devices" class="nav-item"><svg class="icon"><use href="#icon-link"/></svg>连接管理<span class="nav-count" id="nav-count">—</span></a><a href="#history" class="nav-item"><svg class="icon"><use href="#icon-chart"/></svg>流量历史</a><button type="button" class="nav-item" data-open-settings><svg class="icon"><use href="#icon-settings"/></svg>系统设置</button></nav>
-    <div class="sidebar-footer"><section class="system-card" aria-label="服务器资源占用"><p class="system-card-title">系统资源 <span data-system-status>读取中</span></p><div class="system-metric"><span>CPU</span><strong data-system-value="cpu">—</strong><progress data-system-bar="cpu" max="100" value="0"></progress></div><div class="system-metric"><span>内存</span><strong data-system-value="memory">—</strong><progress data-system-bar="memory" max="100" value="0"></progress></div><div class="system-metric"><span>磁盘</span><strong data-system-value="disk">—</strong><progress data-system-bar="disk" max="100" value="0"></progress></div><p class="system-details" data-system-details>等待采集</p></section><div class="sidebar-bottom"><span class="server-dot"></span><div><strong id="server-side">连接中</strong><small>VLESS · REALITY · VISION</small></div></div><p class="sidebar-version">VPN TRAFFIC / <span id="app-version">1.4.0</span></p></div>
+    <nav aria-label="页面导航"><a href="#overview" class="nav-item active" aria-current="location"><svg class="icon"><use href="#icon-grid"/></svg>运行总览</a><a href="#devices" class="nav-item"><svg class="icon"><use href="#icon-link"/></svg>连接管理<span class="nav-count" id="nav-count">—</span></a><a href="#history" class="nav-item"><svg class="icon"><use href="#icon-chart"/></svg>流量历史</a><button type="button" class="nav-item" data-open-settings><svg class="icon"><use href="#icon-settings"/></svg>系统设置</button><button type="button" class="nav-item" id="system-update"><svg class="icon"><use href="#icon-refresh"/></svg>系统升级</button></nav>
+    <div class="sidebar-footer"><section class="system-card" aria-label="服务器资源占用"><p class="system-card-title">系统资源 <span data-system-status>读取中</span></p><div class="system-metric"><span>CPU</span><strong data-system-value="cpu">—</strong><progress data-system-bar="cpu" max="100" value="0"></progress></div><div class="system-metric"><span>内存</span><strong data-system-value="memory">—</strong><progress data-system-bar="memory" max="100" value="0"></progress></div><div class="system-metric"><span>磁盘</span><strong data-system-value="disk">—</strong><progress data-system-bar="disk" max="100" value="0"></progress></div><p class="system-details" data-system-details>等待采集</p></section><div class="sidebar-bottom"><span class="server-dot"></span><div><strong id="server-side">连接中</strong><small>VLESS · REALITY · VISION</small></div></div><p class="sidebar-version">VPN TRAFFIC / <span id="app-version">1.5.0</span></p></div>
   </aside>
   <main>
     <header class="topbar"><span>工作区 <span class="slash">/</span> <strong>网络控制台</strong></span><span class="time-zone">北京时间 UTC+8</span></header>
@@ -100,6 +100,18 @@
     <label class="field">VLESS 连接链接<textarea id="sharing-vless" readonly rows="4" spellcheck="false"></textarea></label><button class="button" type="button" data-copy="sharing-vless">复制 VLESS 链接</button>
     <label class="field sharing-subscription">Clash / Mihomo 在线订阅<textarea id="sharing-subscription" readonly rows="3" spellcheck="false"></textarea></label><button class="button" type="button" data-copy="sharing-subscription">复制订阅地址</button>
     <p class="modal-intro" id="copy-status" role="status"></p>
+  </dialog>
+  <dialog id="updates-dialog" class="modal updates-modal">
+    <div class="modal-heading"><div><p class="eyebrow">SIGNED SOFTWARE UPDATES</p><h2>系统升级</h2></div><button class="close-modal" type="button" data-close="updates-dialog" aria-label="关闭">×</button></div>
+    <p class="modal-intro">从 GitHub Release 获取经签名验证的版本。升级由独立服务执行，关闭页面不会取消任务。</p>
+    <div class="update-versions"><div><span>当前版本</span><strong id="update-installed">—</strong></div><div><span>可用版本</span><strong id="update-available">尚未检查</strong></div></div>
+    <p class="update-check-time" id="update-checked">点击“检查更新”获取签名清单。</p>
+    <p class="update-trust" id="update-trust" hidden>发布签名验证通过 · 安装前再次验证 SHA256</p>
+    <details class="update-release" id="update-release" hidden><summary>查看版本变更</summary><pre id="update-notes"></pre></details>
+    <p class="operation-note">安装前保存恢复包、流量数据库及配置。网页、采集与额度服务会短暂重启；任务进度会继续更新。</p>
+    <section class="update-task" id="update-task" aria-label="升级任务进度" hidden><div class="update-stage"><strong id="update-stage">等待任务</strong><span id="update-percent">0%</span></div><progress id="update-progress" max="100" value="0"></progress><p id="update-message" role="status" aria-live="polite"></p><details open><summary>进度日志</summary><pre id="update-log" aria-label="升级进度日志"></pre></details></section>
+    <div id="update-error" class="modal-error" role="alert" hidden></div>
+    <div class="modal-actions"><button class="button" type="button" id="check-updates">检查更新</button><span class="action-spacer"></span><button class="button" type="button" id="reload-updated-page" hidden>刷新页面使用新版</button><button class="button dark" type="button" id="install-update" disabled>一键升级</button></div>
   </dialog>
 </body>
 </html>

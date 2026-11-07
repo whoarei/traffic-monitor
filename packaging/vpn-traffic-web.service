@@ -1,7 +1,7 @@
 [Unit]
 Description=Private VPN traffic dashboard
-After=network-online.target vpn-traffic-collector.service vpn-traffic-manager.service
-Wants=vpn-traffic-collector.service vpn-traffic-manager.service
+After=network-online.target vpn-traffic-collector.service vpn-traffic-manager.service vpn-traffic-updater.service
+Wants=vpn-traffic-collector.service vpn-traffic-manager.service vpn-traffic-updater.service
 
 [Service]
 Type=simple

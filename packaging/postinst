@@ -5,6 +5,7 @@ if [ "$1" = configure ]; then
         adduser --system --group --no-create-home --home /nonexistent vpn-traffic >/dev/null
     fi
     /usr/bin/vpn-traffic configure
+    /usr/bin/python3 /usr/lib/vpn-traffic/updater.py configure
     systemd-analyze verify /usr/lib/systemd/system/vpn-traffic-collector.service /usr/lib/systemd/system/vpn-traffic-manager.service /usr/lib/systemd/system/vpn-traffic-web.service
     systemctl daemon-reload
     systemctl enable --now vpn-traffic-collector.service vpn-traffic-manager.service vpn-traffic-web.service

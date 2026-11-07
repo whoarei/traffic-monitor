@@ -31,6 +31,8 @@ def main():
         for name in ("vpn-traffic-collector.service", "vpn-traffic-manager.service", "vpn-traffic-web.service"):
             put("usr/lib/systemd/system/" + name, source=ROOT / "packaging" / name)
         put("usr/share/vpn-traffic/nginx.conf", source=ROOT / "packaging/nginx.conf")
+        put("usr/share/vpn-traffic/updater.service", source=ROOT / "packaging/vpn-traffic-updater.service")
+        put("usr/share/vpn-traffic/update-signing.pub", source=ROOT / "packaging/update-signing.pub")
         put("usr/share/doc/vpn-traffic/README.md", source=ROOT / "README.md")
         put("usr/bin/vpn-traffic", content='#!/bin/sh\nexec /usr/bin/python3 /usr/lib/vpn-traffic/main.py "$@"\n', mode=0o755)
         for name in ("postinst", "prerm", "postrm"):
@@ -42,7 +44,7 @@ Section: net
 Priority: optional
 Architecture: all
 Maintainer: Local Administrator <root@localhost>
-Depends: python3 (>= 3.10), nginx, openssl, adduser, systemd, tzdata
+Depends: python3 (>= 3.10), nginx, openssl (>= 3.0), adduser, systemd, tzdata
 Installed-Size: {size}
 Description: Private per-identity Xray traffic history and dashboard
  Collects upload/download counters every 30 seconds, persists history in

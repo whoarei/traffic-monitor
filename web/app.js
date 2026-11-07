@@ -2,6 +2,7 @@
 const $ = id => document.getElementById(id);
 let latest = null, lastHistory = null, historyRows = [], historyPage = 0, requestId = 0, refreshing = false;
 let historyMode='hour';
+let updateState=null,updateTimer=null,updateRequestId='',updateBusy=false,updateOperationError='';
 const pageSize = 20;
 const dateTime = new Intl.DateTimeFormat('zh-CN', {timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
 const dateOnly = new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'});
@@ -127,6 +128,7 @@ async function loadHistory(resetPage=false) {
   showHistoryTable();chart(result);
 }
 async function refresh() {
+  if(updateState?.maintenance)return;
   if(refreshing)return; refreshing=true;$('refresh').disabled=true;
   try {
     latest=await get('api/summary'); const selected=$('device').value;
@@ -217,3 +219,50 @@ async function refreshSystem(){
   for(const element of document.querySelectorAll('[data-system-details]'))element.textContent=details;
 }
 refreshSystem();setInterval(()=>{if(!document.hidden)refreshSystem();},5000);
+
+const upgradeTerminal=new Set(['succeeded','failed','rolled_back','recovery_required']);
+const upgradeStages={queued:'任务已创建',checking:'检查兼容性',downloading:'下载安装包',verified:'签名及文件校验通过',backing_up:'保存备份',installing:'安装新版本',health_check:'健康检查',rolling_back:'恢复上一版本',succeeded:'升级成功',failed:'升级未执行',rolled_back:'已恢复上一版本',recovery_required:'需要管理员处理'};
+function showUpdates(state){
+  const previousJob=updateState?.job;updateState=state;
+  const job=state.job,active=job&&!upgradeTerminal.has(job.state),candidate=state.candidate;
+  $('update-installed').textContent='v'+state.installed_version;
+  $('update-available').textContent=candidate?'v'+candidate.version:'尚未检查';
+  $('update-checked').textContent=state.checked_at?'最近检查 '+dateTime.format(new Date(state.checked_at*1000))+(state.available?' · 发现可用更新':candidate?' · 当前没有可安装的新版本':''):'尚未检查更新';
+  $('update-trust').hidden=!candidate||Boolean(state.error||updateOperationError);$('update-release').hidden=!candidate;
+  $('update-notes').textContent=candidate?.notes||'';
+  $('install-update').textContent=state.available?'升级到 v'+candidate.version:'一键升级';
+  $('install-update').disabled=updateBusy||!state.configured||!state.available||active||job?.state==='recovery_required';
+  $('check-updates').disabled=updateBusy||active;
+  $('update-task').hidden=!job;
+  if(job){$('update-stage').textContent=upgradeStages[job.state]||job.state;$('update-percent').textContent=job.progress+'%';$('update-progress').value=job.progress;$('update-message').textContent=job.message;$('update-log').textContent=(job.logs||[]).map(row=>dateTime.format(new Date(row.time*1000))+'  '+row.message).join('\n');}
+  if(active)updateOperationError='';
+  $('update-error').textContent=updateOperationError||state.error||job?.error||'';$('update-error').hidden=!$('update-error').textContent;
+  $('reload-updated-page').hidden=job?.state!=='succeeded';
+  if(previousJob&&!upgradeTerminal.has(previousJob.state)&&job&&upgradeTerminal.has(job.state)){refresh();refreshSystem();}
+  if(active||$('updates-dialog').open){if(!updateTimer)updateTimer=setInterval(refreshUpdateStatus,3000);}else{clearInterval(updateTimer);updateTimer=null;}
+}
+async function refreshUpdateStatus(){
+  if(document.hidden&&!$('updates-dialog').open)return;
+  try{showUpdates(await get('api/updates/status'));}
+  catch(error){if($('updates-dialog').open){$('update-error').textContent='升级状态暂不可用，正在等待独立服务重连…';$('update-error').hidden=false;}}
+}
+$('system-update').addEventListener('click',()=>{$('updates-dialog').showModal();refreshUpdateStatus();if(!updateTimer)updateTimer=setInterval(refreshUpdateStatus,3000);});
+$('updates-dialog').addEventListener('close',()=>{if(!updateState?.job||upgradeTerminal.has(updateState.job.state)){clearInterval(updateTimer);updateTimer=null;}});
+$('check-updates').addEventListener('click',async()=>{
+  updateBusy=true;updateOperationError='';$('check-updates').disabled=true;$('install-update').disabled=true;$('update-error').hidden=true;
+  try{const state=await mutate('api/updates/check',{});updateRequestId='';showUpdates(state);}
+  catch(error){updateOperationError=error.message;$('update-error').textContent=error.message;$('update-error').hidden=false;}
+  finally{updateBusy=false;if(updateState)showUpdates(updateState);else $('check-updates').disabled=false;}
+});
+$('install-update').addEventListener('click',async()=>{
+  if(!updateState?.available||updateBusy)return;
+  const version=updateState.candidate.version;
+  if(!confirm('升级到 v'+version+'？将先验证签名与安装包并保存备份，网页、采集和额度服务可能短暂重启。关闭页面不会中止升级。'))return;
+  if(!updateRequestId||updateState.job&&upgradeTerminal.has(updateState.job.state))updateRequestId=crypto.randomUUID();
+  updateBusy=true;updateOperationError='';$('install-update').disabled=true;$('check-updates').disabled=true;
+  try{showUpdates(await mutate('api/updates/start',{version,request_id:updateRequestId}));}
+  catch(error){updateOperationError=error.message;$('update-error').textContent=error.message;$('update-error').hidden=false;await refreshUpdateStatus();}
+  finally{updateBusy=false;if(updateState)showUpdates(updateState);if(!updateTimer)updateTimer=setInterval(refreshUpdateStatus,3000);}
+});
+$('reload-updated-page').addEventListener('click',()=>location.reload());
+refreshUpdateStatus();

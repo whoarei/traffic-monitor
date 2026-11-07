@@ -4,7 +4,7 @@
 
 ## 控制台界面
 
-v1.4.0 使用深色控制台、青蓝色趋势图和额度监测面板；侧栏选中项使用低对比度底色，没有左侧亮色竖线。手机上连接用量重排为卡片，保留全部统计字段和管理入口。
+v1.5.0 沿用深色控制台、青蓝色趋势图和额度监测面板；侧栏选中项使用低对比度底色，没有左侧亮色竖线。手机上连接用量重排为卡片，保留全部统计字段和管理入口。
 
 ![VPN Traffic 深色控制台，图中为隔离演示数据](docs/images/dashboard.png)
 
@@ -14,6 +14,7 @@ v1.4.0 使用深色控制台、青蓝色趋势图和额度监测面板；侧栏�
 - [离线 HTML 技术方案](docs/technical-design.html)：下载后用浏览器打开，支持目录导航、配色切换和打印 / 保存 PDF。
 - [CI 与版本发布](docs/releasing.md)：自动检查、版本标签及 GitHub Release 附件。
 - [版本变更](CHANGELOG.md)。
+- [在线升级与失败恢复](docs/updating.md)：签名验证、独立服务、维护窗口、恢复包及日志。
 
 ## 安装
 
@@ -25,14 +26,18 @@ v1.4.0 使用深色控制台、青蓝色趋势图和额度监测面板；侧栏�
 - `/usr/local/sbin/xray-subscription` 及 `/etc/nginx/sites-available/xray-subscription.conf`，已配置 HTTPS 8443。
 
 ```sh
-sha256sum -c vpn-traffic_1.4.0_all.deb.sha256
-sudo apt install ./vpn-traffic_1.4.0_all.deb
+sha256sum -c vpn-traffic_1.5.0_all.deb.sha256
+sudo apt install ./vpn-traffic_1.5.0_all.deb
 sudo vpn-traffic web-password
 ```
 
 网页入口：`https://服务器IP:8443/traffic/`。用户名和随机密码通过最后一条命令查看。安装时配置校验通过后会重启一次 Xray，原节点链接与订阅地址保持有效。
 
 升级或重新安装沿用原数据库和登录密码。安装前的配置快照保存在 `/var/backups/vpn-traffic/before-*`，权限为 root 专用；这类快照包含服务器私钥，不能公开。
+
+## 在线升级
+
+首次部署 v1.5.0 后，侧栏“系统升级”可检查公开 GitHub Release 的签名清单并安装更高版本，查看独立任务的进度和日志。升级前保存恢复包、数据库和配置；兼容情况下失败自动恢复旧代码与配置，保留当前流量数据库。首次从旧版迁移及人工恢复方式见 [在线升级与失败恢复](docs/updating.md)。
 
 ## 查询与维护
 
@@ -159,12 +164,12 @@ npm run test:web
 发布时修改版本号、提交代码和文档，再推送同名的 `v主版本.次版本.修订版本` 标签，例如：
 
 ```sh
-# 将 app/version.py 中的 VERSION 改为 1.4.1，提交对应代码和文档后：
+# 将 app/version.py 中的 VERSION 改为 1.5.1，提交对应代码和文档后：
 git push origin main
-git tag -a v1.4.1 -m "VPN Traffic 1.4.1"
-git push origin v1.4.1
+git tag -a v1.5.1 -m "VPN Traffic 1.5.1"
+git push origin v1.5.1
 ```
 
-标签与代码版本必须一致。测试和构建全部通过后，GitHub Actions 自动发布 [GitHub Release](https://github.com/whoarei/traffic-monitor/releases)，附带 deb、SHA256、源码包和技术文档；失败时不发布正式版本。完整说明见 [CI 与版本发布](docs/releasing.md)。
+标签与代码版本必须一致。测试和构建全部通过后，GitHub Actions 自动发布 [GitHub Release](https://github.com/whoarei/traffic-monitor/releases)，附带 deb、SHA256、源码包、技术文档及 Ed25519 签名升级清单；失败时不发布正式版本。完整说明见 [CI 与版本发布](docs/releasing.md)。
 
 参考：[Xray 统计](https://xtls.github.io/en/config/stats.html)、[StatsService API](https://xtls.github.io/en/config/api.html)。
