@@ -57,6 +57,12 @@ jobs:
       - name: Run unit tests
         run: python3 -m unittest discover -s tests -v
 
+      - name: Run dashboard browser regression
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npm run test:web
+
       - name: Build and verify release assets
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
@@ -126,7 +132,7 @@ jobs:
           else
             gh release create "$RELEASE_TAG" --verify-tag --draft \
               --title "VPN Traffic ${RELEASE_VERSION}" --generate-notes \
-              --notes "包含 Debian/Ubuntu 安装包、SHA256 校验、源码包及 Markdown/离线 HTML 技术方案。安装前需已有本项目约定的 Xray 与 HTTPS 私人订阅部署，操作方法见 README。"
+              --notes "包含 Debian/Ubuntu 安装包、SHA256 校验、源码包及 Markdown/离线 HTML 技术方案。安装前需已有本项目约定的 Xray 与 HTTPS 私人订阅部署，操作方法见 README。版本变更见 https://github.com/${GH_REPO}/blob/${RELEASE_TAG}/CHANGELOG.md 。此流程不自动部署服务器。"
           fi
           gh release upload "$RELEASE_TAG" dist/* --clobber
           gh release edit "$RELEASE_TAG" --draft=false --latest

@@ -2,11 +2,18 @@
 
 为现有 Xray VLESS + REALITY 和 HTTPS 私人订阅部署提供每身份流量统计、历史记录、网页新增连接和月度配额管理。安装包为 `Architecture: all`，应用仅使用 Python 标准库；不包含服务器凭据，也不安装 Xray 本身。
 
+## 控制台界面
+
+v1.4.0 使用深色控制台、青蓝色趋势图和额度监测面板；侧栏选中项使用低对比度底色，没有左侧亮色竖线。手机上连接用量重排为卡片，保留全部统计字段和管理入口。
+
+![VPN Traffic 深色控制台，图中为隔离演示数据](docs/images/dashboard.png)
+
 ## 项目文档
 
 - [技术方案说明](docs/technical-design.md)：整体架构、流量账本、统一月度重置、临时加额、历史查询、数据模型、API、部署和维护。
 - [离线 HTML 技术方案](docs/technical-design.html)：下载后用浏览器打开，支持目录导航、配色切换和打印 / 保存 PDF。
 - [CI 与版本发布](docs/releasing.md)：自动检查、版本标签及 GitHub Release 附件。
+- [版本变更](CHANGELOG.md)。
 
 ## 安装
 
@@ -18,8 +25,8 @@
 - `/usr/local/sbin/xray-subscription` 及 `/etc/nginx/sites-available/xray-subscription.conf`，已配置 HTTPS 8443。
 
 ```sh
-sha256sum -c vpn-traffic_1.3.0_all.deb.sha256
-sudo apt install ./vpn-traffic_1.3.0_all.deb
+sha256sum -c vpn-traffic_1.4.0_all.deb.sha256
+sudo apt install ./vpn-traffic_1.4.0_all.deb
 sudo vpn-traffic web-password
 ```
 
@@ -131,21 +138,31 @@ version=$(python3 scripts/check_version.py)
 dpkg-deb --info "dist/vpn-traffic_${version}_all.deb"
 ```
 
-`tests/test_*.py` 使用临时数据库和模拟对象，可以在开发环境运行。`tests/verify_*.py`、`tests/qa_*.cjs` 及 `cleanup_fixtures.py` 是原部署的分版本验收工具，部分会创建、调整或撤销连接；运行前需检查适用版本并修改目标环境。浏览器验收脚本还需要 Playwright，并使用原工作站的依赖路径。
+`tests/test_*.py` 使用临时数据库和模拟对象，可以在开发环境运行。`tests/verify_*.py`、旧版 `tests/qa_*.cjs`（不含下述 `qa_dashboard.cjs`）及 `cleanup_fixtures.py` 是原部署的分版本验收工具，部分会创建、调整或撤销连接；运行前需检查适用版本并修改目标环境。旧版浏览器验收脚本还需要 Playwright，并使用原工作站的依赖路径。
+
+`tests/qa_dashboard.cjs` 是新版界面的独立浏览器回归，使用本地内存 API 夹具，不连接 VPN 服务器。需要 Node.js 20 及以上版本；Playwright 仅用于开发与 CI，不随 deb 安装：
+
+```sh
+npm ci
+npx playwright install --with-deps chromium
+npm run test:web
+```
+
+此回归覆盖历史视图与导出、采样缺口、连接管理、临时加额、手工停用、全局计划、CSRF 更新、空状态及桌面/手机布局。需要交互预览时，可运行 `node tests/dashboard_fixture.cjs`，访问打印出的本机地址；所有修改只作用于进程内的演示数据。
 
 `build_technical_document.py` 提供 HTML 技术文档生成逻辑。`build_deliverables.py` 用于原部署工作区的私人交付，依赖仓库外的 `.work/<服务器>/` 和 `deliverables/<服务器>/`，会生成含登录凭据的私人资料，不能将这些输出发布到仓库。源码仓库只保存程序、打包配置、测试和说明；数据库、服务器清单、登录信息及构建产物均应保存在仓库外。
 
 ## 自动发布
 
-普通分支提交、Pull Request 和手动运行会执行语法检查、单元测试、deb 构建和校验，并保留 14 天构建附件。版本号统一在 `app/version.py` 定义。
+普通分支提交、Pull Request 和手动运行会执行语法检查、单元测试、隔离数据的浏览器回归、deb 构建和校验，并保留 14 天构建附件。版本号统一在 `app/version.py` 定义。
 
 发布时修改版本号、提交代码和文档，再推送同名的 `v主版本.次版本.修订版本` 标签，例如：
 
 ```sh
-# 将 app/version.py 中的 VERSION 改为 1.3.1，提交对应代码和文档后：
+# 将 app/version.py 中的 VERSION 改为 1.4.1，提交对应代码和文档后：
 git push origin main
-git tag -a v1.3.1 -m "VPN Traffic 1.3.1"
-git push origin v1.3.1
+git tag -a v1.4.1 -m "VPN Traffic 1.4.1"
+git push origin v1.4.1
 ```
 
 标签与代码版本必须一致。测试和构建全部通过后，GitHub Actions 自动发布 [GitHub Release](https://github.com/whoarei/traffic-monitor/releases)，附带 deb、SHA256、源码包和技术文档；失败时不发布正式版本。完整说明见 [CI 与版本发布](docs/releasing.md)。

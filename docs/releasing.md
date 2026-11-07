@@ -35,7 +35,7 @@ git push origin v1.3.1
 构建在 GitHub 托管的 Ubuntu 24.04 runner 中执行：
 
 1. 校验版本及标签，检查 Python、JavaScript 和 deb 维护脚本语法。
-2. 运行 `tests/test_*.py` 单元测试；不执行会修改真实服务器的现场验收脚本。
+2. 运行 `tests/test_*.py` 单元测试和 `npm run test:web` 浏览器回归。后者安装锁定版本的 Playwright / Chromium，使用本地内存夹具，不连接真实服务器；旧版现场验收脚本不在 CI 中执行。
 3. 构建 deb，检查包内版本和 `Architecture: all`，解包后执行 CLI `--help` 验证 Python 模块齐全。
 4. 使用 `git archive HEAD` 导出当前提交的源码，不读取服务器、数据库或私人交付目录。
 5. 复制项目技术方案，生成并核对 SHA256；上传构建附件，保留 14 天。

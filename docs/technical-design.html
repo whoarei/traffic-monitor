@@ -701,7 +701,7 @@
     </nav>
     <div class="foot">
       <div class="theme-control" hidden><label for="theme-select">文档配色</label><select id="theme-select"><optgroup label="经典配色"><option value="classic">经典蓝</option><option value="slate">石墨灰</option><option value="forest">森林绿</option></optgroup><optgroup label="亮色配色"><option value="sky">蓝色 · 亮色</option><option value="mint">绿色 · 亮色</option><option value="yellow">黄色 · 亮色</option><option value="pink">粉色 · 亮色</option><option value="apricot" selected>橙色 · 默认</option><option value="lavender">紫色 · 亮色</option></optgroup><optgroup label="深色配色"><option value="dark">深色</option></optgroup></select></div>
-      更新于 2026-11-07<br>版本 1.3.0<br>单文件 HTML · 支持离线阅读
+      更新于 2026-11-07<br>版本 1.4.0<br>单文件 HTML · 支持离线阅读
       <button type="button" id="print-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7zM17 11h.01"/></svg>打印 / 保存 PDF</button>
     </div>
   </aside>
@@ -709,7 +709,7 @@
     <header class="hero">
       <div class="eyebrow">项目技术方案 / Debian · Ubuntu</div>
       <h1>VPN Traffic 技术方案</h1>
-      <p class="lead">按连接身份统计流量，统一执行月度重置和临时加额，并提供历史查询与服务器资源展示。</p><p>本文依据仓库 1.3.0 源码整理。<a href="technical-design.md">Markdown 版本</a>适合在 GitHub 中阅读；本文件可离线打开。部署账号和现场验收资料另行私人保存。</p>
+      <p class="lead">按连接身份统计流量，统一执行月度重置和临时加额，并提供历史查询与服务器资源展示。</p><p>本文依据仓库 1.4.0 源码整理。<a href="technical-design.md">Markdown 版本</a>适合在 GitHub 中阅读；本文件可离线打开。部署账号和现场验收资料另行私人保存。</p>
     </header>
     <section class="section" id="scope">
       <div class="section-head"><span class="section-num">01</span><h2>目标与适用范围</h2></div>
@@ -720,6 +720,7 @@
 <li>新增连接、调整月度额度、手工启停、轮换或撤销凭据、查看私人在线订阅。</li>
 <li>全系统共用的月度重置日期与时间，以及额度用尽后的临时加额恢复。</li>
 <li>Web 页面左下角的 CPU、内存和根分区磁盘占用；手机布局显示在页面底部。</li>
+<li>深色控制台、额度监测和超额提醒；侧栏选中项不使用左侧亮色竖线，手机连接记录重排为卡片。</li>
 </ul>
 <p>运行环境为使用 systemd 的 Debian / Ubuntu、Python 3.10 及以上版本和系统 <code>tzdata</code>。应用使用 Python 标准库、SQLite、原生 JavaScript 和 CSS，没有运行时 Python 第三方依赖。Debian 安装包为 <code>Architecture: all</code>。</p>
 <p>安装前需已有 <code>/usr/local/bin/xray</code>、<code>/usr/local/etc/xray/config.json</code>、<code>xray.service</code>、<code>/root/xray-deployment/manifest.json</code>、<code>/root/xray-deployment/backup.sh</code>、<code>/usr/local/sbin/xray-subscription</code> 和配置好 HTTPS 8443 的订阅站点。本包依赖这些部署约定；迁移到其他 Xray 管理系统前需要适配集成层。每条需要独立统计的连接必须使用唯一的 Xray <code>email</code>。</p>
@@ -854,6 +855,10 @@ B = bonus                        本期临时额度
 <p>零跨度样本归入其时间戳所在小时。没有任何采样覆盖的小时标记 <code>observed = false</code>，页面显示“—”，CSV 数值留空。部分覆盖的小时只包含实际记录到的采样用量，不外推缺失流量。小时分布是基于采样的估计，不能还原采样间隔内每秒的真实速率。</p>
 <p>历史区域有独立连接筛选，连接行的“历史”按钮会选中该身份并定位历史区域，不改变总览筛选。总览筛选仍可同步历史筛选。CSV 沿用当前连接、时间范围和小时 / 天粒度，使用 UTF-8 BOM，并转义可能被表格软件视为公式的名称。</p>
 <p>历史查询采用参数化 SQL，校验身份和日期范围；日查询的结束日不得早于开始日，首尾日期差不得超过 3660 天。小时查询流式读取样本，每个身份构造约 25 个区间；表格分页展示，图表合并当前选中身份。</p>
+<h3>控制台呈现</h3>
+<p>1.4.0 将流量趋势放在连接列表上方，下载使用青色实线、上传使用蓝色虚线，并保留图例和单位。没有采样覆盖的小时会断开折线；不会为了连续曲线补入零值。点击图中区间或通过键盘聚焦，可读取该时段的上传、下载或“未采集”状态。</p>
+<p>历史明细默认收起，可展开查看全部记录和分页；连接行的历史入口自动展开明细。日期输入在按天或自定义范围下显示，小时视图继续禁用日期输入。CSV 沿用原有接口与参数。</p>
+<p>额度面板优先展示到额连接，连接列表提供临时加额入口；加额弹窗按最新已知用量估算操作后的可用流量，最终结果由管理器 checkpoint 和事务处理决定。手机上每条连接重排为卡片，全部原有统计字段及管理操作仍可访问。页面使用本地 SVG 图标和系统字体，继续遵守既有 CSP，无需放宽脚本或样式来源。</p>
 
     </section>
 
@@ -1031,10 +1036,10 @@ B = bonus                        本期临时额度
 <h3>构建和安装</h3>
 <pre><code class="language-sh">python3 -m unittest discover -s tests -v
 python3 build.py --output dist
-dpkg-deb --info dist/vpn-traffic_1.3.0_all.deb
+dpkg-deb --info dist/vpn-traffic_1.4.0_all.deb
 cd dist
-sha256sum -c vpn-traffic_1.3.0_all.deb.sha256
-sudo apt install ./vpn-traffic_1.3.0_all.deb
+sha256sum -c vpn-traffic_1.4.0_all.deb.sha256
+sudo apt install ./vpn-traffic_1.4.0_all.deb
 sudo vpn-traffic web-password
 </code></pre>
 <p>安装脚本创建应用用户、检查现有部署、生成或保留登录信息、接入统计 API 和网页路由、验证服务单元并启动三个服务。首次启用统计配置可能重启 Xray；升级是否重启取决于 Xray 配置是否发生变化。升级沿用数据库和登录密码。安装前配置快照位于 <code>/var/backups/vpn-traffic/before-*</code>。</p>
@@ -1068,15 +1073,16 @@ sudo /root/xray-deployment/backup.sh
 
     <section class="section" id="verification">
       <div class="section-head"><span class="section-num">11</span><h2>验证依据与实现边界</h2></div>
-<p>仓库的 37 项 <code>unittest</code> 在 Ubuntu 24.04 环境通过，覆盖计数去重、重启保留、午夜分摊、全局周期、临时额度及幂等、管理校验、小时窗口、单身份过滤、未采集区间、CSV 和资源指标。1.3.0 Debian 安装包已成功构建。</p>
+<p>仓库的 37 项 <code>unittest</code> 在 Ubuntu 24.04 环境通过，覆盖计数去重、重启保留、午夜分摊、全局周期、临时额度及幂等、管理校验、小时窗口、单身份过滤、未采集区间、CSV 和资源指标。1.4.0 Debian 安装包已成功构建。</p>
 <p>CI 另增加 4 项发布校验测试，检查标签一致性、版本格式及错误标签的命令行拒绝行为；完整测试集共 41 项。</p>
+<p>1.4.0 新增 <code>tests/qa_dashboard.cjs</code> 浏览器回归，以本地内存 API 夹具在原有 CSP 下运行，不访问真实 VPN。覆盖移除侧栏亮色边、小时/天/自定义范围、独立连接筛选、CSV、采样缺口、分页、新增与分享、复制、编辑与本期重置、临时加额恢复、手工停用保留、统一计划、CSRF 更新、资源过期、恶意名称文本化和空状态；检查 1440、1024、768、390、320 像素宽度及手机弹窗。Playwright 仅为开发及 CI 依赖，不引入运行时 Node.js 依赖。</p>
 <p>原部署验收还验证过 HTTPS 认证、网页新增及额度管理、小时与天视图、独立历史筛选、小时 CSV、桌面资源卡和 390×844 手机布局。私人交付目录保留当时的验收记录与截图；项目文档不将当时的资源快照作为当前服务器状态。</p>
-<p><code>tests/test_*.py</code> 在临时数据库及模拟对象上运行。<code>verify_*.py</code>、<code>qa_*.cjs</code> 和清理脚本为分版本的现场验收工具，部分修改连接状态，运行前应检查目标、版本和配置；浏览器脚本的 Playwright 路径也需按环境调整。</p>
+<p><code>tests/test_*.py</code> 在临时数据库及模拟对象上运行，<code>qa_dashboard.cjs</code> 使用独立内存夹具。其余 <code>verify_*.py</code>、旧版 <code>qa_*.cjs</code> 和清理脚本为分版本的现场验收工具，部分修改连接状态，运行前应检查目标、版本和配置；旧版浏览器脚本的 Playwright 路径也需按环境调整。</p>
 <p>主要边界包括：采样明细约保留 30 天、更早小时分布无法恢复；资源仅保留最新值；突发故障可能漏记尾段流量；额度轮询可能产生少量超额；改变转发状态会短暂重启 Xray。当前实现面向单台服务器，部署路径、8443 HTTPS 入口及 10085 / 9081 回环端口具有约定，不包含跨服务器聚合或任意面板的自动适配。</p>
 <p>维护技术方案时，应结合 <code>app/</code>、<code>packaging/</code> 和测试同步更新 Markdown 与离线 HTML；部署现场的账号、数据库和验收快照继续保存在仓库外。</p>
 
     </section>
-    <footer class="footer">VPN Traffic 1.3.0 · 项目技术文档<br>单文件 HTML · 支持离线阅读与打印 / 保存 PDF</footer>
+    <footer class="footer">VPN Traffic 1.4.0 · 项目技术文档<br>单文件 HTML · 支持离线阅读与打印 / 保存 PDF</footer>
   </main>
 </div>
 <script>
