@@ -1,0 +1,4 @@
+interface:
+  display_name: "流量监控版本发布"
+  short_description: "先列更新点并确认候选版本号，再提交代码、打标签和发布 GitHub Release。"
+  default_prompt: "使用 $traffic-monitor-release 发布流量监控；未指定版本号时，先列出更新点并向我确认候选版本号。"

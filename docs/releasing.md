@@ -2,6 +2,8 @@
 
 工作流为 [`.github/workflows/ci-release.yml`](../.github/workflows/ci-release.yml)。运行记录见 [GitHub Actions](https://github.com/whoarei/traffic-monitor/actions/workflows/ci-release.yml)，正式版本见 [Releases](https://github.com/whoarei/traffic-monitor/releases)。
 
+项目内发布技能为 [traffic-monitor-release](../.agents/skills/traffic-monitor-release/SKILL.md)，随仓库提交。发布重点是确定更新内容和版本号：用户未说明版本时，先列更新点，再给出候选版本及理由并等待确认；确定后提交、打标签和发布。发布时不额外安排手动测试或验收，既有 CI 自动执行。
+
 ## 触发规则
 
 | 事件 | 行为 |
@@ -17,12 +19,11 @@
 
 1. 更新 [`app/version.py`](../app/version.py) 的 `VERSION`，例如 `1.3.1`。应用状态、deb 元数据和私人交付脚本共用此值。
 2. 提交功能、测试与文档变化；按需要更新 README 安装示例和技术方案的适用版本。历史示例版本不由 CI 批量改写。
-3. 将代码推送到 `main` 并确认检查通过。
+3. 将发布提交推送到 `main`，无需在本地重复运行 CI 测试。
 4. 创建并推送相同版本的标签：
 
 ```sh
 python3 scripts/check_version.py
-python3 -m unittest discover -s tests -v
 git push origin main
 git tag -a v1.3.1 -m "VPN Traffic 1.3.1"
 git push origin v1.3.1
