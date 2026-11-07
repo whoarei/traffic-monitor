@@ -1,0 +1,48 @@
+const assert=require('assert'),fs=require('fs'),path=require('path');
+const {chromium}=require('C:/Users/xishu/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const work=path.resolve(__dirname,'../../.work/45.136.178.163');
+const access=JSON.parse(fs.readFileSync(path.join(work,'traffic-web-access.json'),'utf8'));
+const output=path.join(work,'traffic-qa-1.3.0');fs.mkdirSync(output,{recursive:true});
+(async()=>{
+  const browser=await chromium.launch({headless:true});
+  try{
+    const context=await browser.newContext({viewport:{width:1440,height:1080},httpCredentials:{username:access.username,password:access.password},acceptDownloads:true});
+    const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+    await page.goto(access.url);await page.waitForFunction(()=>document.getElementById('health').textContent==='采集正常'&&document.getElementById('history-view-label').textContent.includes('按小时'));
+    await page.waitForFunction(()=>!document.querySelector('.sidebar [data-system-value="cpu"]').textContent.includes('—'));
+    const summary=await (await context.request.get(access.url+'api/summary')).json();assert(summary.devices.length>=2);
+    const selectedLabel=summary.devices.find(d=>d.id==='windows').label;
+    const otherLabel=summary.devices.find(d=>d.id==='android').label;
+    assert(await page.locator('#from').isDisabled());
+    const hourly=await (await context.request.get(access.url+'api/history?view=hourly')).json();
+    assert(hourly.granularity==='hour'&&hourly.window_end-hourly.window_start===86400&&hourly.rows.length>=24*summary.devices.length);
+    assert.strictEqual(hourly.up,hourly.rows.reduce((n,r)=>n+r.up,0));
+    const system=await (await context.request.get(access.url+'api/system')).json();assert(system.available);
+    for(const key of ['cpu','memory','disk'])assert(Number.isFinite(system[key+'_percent'])&&system[key+'_percent']>=0&&system[key+'_percent']<=100);
+    const resourceBox=await page.locator('.sidebar .system-card').boundingBox();assert(resourceBox.x<230&&resourceBox.y>500&&resourceBox.y+resourceBox.height<=1080);
+    await page.screenshot({path:path.join(output,'hourly-desktop.png'),fullPage:true});
+    await page.selectOption('#history-device','windows');
+    await page.waitForFunction(({wanted,other})=>document.getElementById('history-body').textContent.includes(wanted)&&!document.getElementById('history-body').textContent.includes(other),{wanted:selectedLabel,other:otherLabel});
+    assert.strictEqual(await page.locator('#device').inputValue(),'');
+    assert.strictEqual(await page.locator('#devices-body .device-name').count(),summary.devices.length);
+    const downloadPromise=page.waitForEvent('download');await page.locator('#export').click();const download=await downloadPromise;const csvPath=path.join(output,'windows-hourly.csv');await download.saveAs(csvPath);
+    const csv=fs.readFileSync(csvPath,'utf8');assert(csv.includes('小时区间(北京时间)')&&csv.includes(',windows,')&&!csv.includes(',android,'));
+    await page.locator('[data-days="7"]').click();await page.waitForFunction(()=>document.getElementById('history-view-label').textContent==='按天汇总');assert(!(await page.locator('#from').isDisabled()));
+    await page.locator('#custom-history').click();await page.fill('#from','2026-11-08');await page.fill('#to','2026-11-07');await page.locator('#filters button[type=submit]').click();await page.waitForFunction(()=>document.getElementById('error').textContent.includes('开始日期不能晚于结束日期'));
+    await page.locator('#last-day').click();await page.waitForFunction(()=>document.getElementById('error').hidden);
+    const id=summary.devices.find(d=>d.id!=='windows')?.id||summary.devices[0].id;
+    const label=summary.devices.find(d=>d.id===id).label;
+    await page.locator('#devices-body tr').filter({hasText:label}).getByRole('button',{name:'历史',exact:true}).click();
+    await page.waitForFunction(expected=>document.getElementById('history-device').value===expected,id);
+    const filtered=await (await context.request.get(access.url+'api/history?view=hourly&device='+encodeURIComponent(id))).json();assert(filtered.rows.every(r=>r.email===id));
+    const bad=await context.request.get(access.url+'api/history?view=hourly&device=unknown-identity');assert.strictEqual(bad.status(),400);
+    const anonymous=await browser.newContext();assert.strictEqual((await anonymous.request.get(access.url+'api/system')).status(),401);await anonymous.close();
+    await page.selectOption('#history-device','');await page.locator('#last-day').click();await page.waitForFunction(()=>document.getElementById('history-view-label').textContent.includes('按小时'));
+    await page.setViewportSize({width:390,height:844});await page.waitForFunction(()=>Number(document.getElementById('chart').getAttribute('viewBox').split(' ')[2])<400);
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert(await page.locator('footer .system-card').isVisible());
+    await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:path.join(output,'hourly-mobile.png'),fullPage:true});
+    assert.strictEqual(errors.length,0,errors.join('\n'));
+    const report={default24HourView:true,hourlyByteSumsValid:true,independentHistoryIdentityFilter:true,rowHistoryShortcut:true,hourlyCsvExport:true,dailyAndCustomViews:true,invalidRangeHandled:true,resourcePercentagesValid:true,resourcesAtDesktopBottomLeft:true,resourcesInMobileFooter:true,resourceApiAuthenticated:true,mobileOverflow:false,javascriptErrors:errors};
+    fs.writeFileSync(path.join(output,'history-web-qa.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+  }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exit(1);});

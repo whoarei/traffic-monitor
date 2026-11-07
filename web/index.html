@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>VPN 流量 · 查询中心</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#overview"><span class="brand-mark">↗</span><span>VPN 流量<small>PRIVATE NETWORK</small></span></a>
+    <div class="nav-label">工作区</div>
+    <nav aria-label="页面导航"><a href="#overview" class="nav-item active"><span>◈</span>流量总览</a><a href="#devices" class="nav-item"><span>▤</span>连接用量</a><a href="#history" class="nav-item"><span>◷</span>历史记录</a></nav>
+    <div class="sidebar-footer">
+      <section class="system-card" aria-label="服务器资源占用"><p class="system-card-title">系统资源 <span data-system-status>读取中</span></p><div class="system-metric"><span>CPU</span><strong data-system-value="cpu">—</strong><progress data-system-bar="cpu" max="100" value="0"></progress></div><div class="system-metric"><span>内存</span><strong data-system-value="memory">—</strong><progress data-system-bar="memory" max="100" value="0"></progress></div><div class="system-metric"><span>磁盘</span><strong data-system-value="disk">—</strong><progress data-system-bar="disk" max="100" value="0"></progress></div><p class="system-details" data-system-details>等待采集</p></section>
+      <div class="sidebar-bottom"><span class="server-dot"></span><div><strong id="server-side">连接中</strong><small>独立身份 · 分别统计</small></div></div>
+    </div>
+  </aside>
+  <main>
+    <header class="topbar"><span>工作区 <span class="slash">/</span> 流量查询</span><span class="time-zone">北京时间 UTC+8</span></header>
+    <section class="page-heading" id="overview">
+      <div><p class="eyebrow">NETWORK INSIGHTS</p><h1>每一条连接，清晰可见。</h1><p class="subtitle">查看设备用量、近期传输速度与每日历史记录。</p></div>
+      <div class="heading-actions"><span class="health" id="health" role="status">正在连接</span><button class="button" id="system-settings" type="button">系统设置</button><button class="button" id="refresh" type="button">↻ 刷新数据</button><button class="button dark" id="new-link" type="button">＋ 新增连接</button></div>
+    </section>
+    <div id="error" class="error" role="alert" hidden></div>
+    <div class="scope-row"><label for="device">统计范围</label><select id="device"><option value="">全部连接</option></select><span id="updated">等待首次采集</span></div>
+    <div class="system-schedule" id="system-schedule" role="status">正在读取系统统一重置计划…</div>
+    <section class="metrics" aria-label="流量汇总">
+      <article class="metric"><p>今日流量 <span class="metric-icon">↗</span></p><strong id="today-total">—</strong><small id="today-detail">上传 — · 下载 —</small></article>
+      <article class="metric"><p>本月流量 <span class="metric-icon">◷</span></p><strong id="month-total">—</strong><small id="month-detail">上传 — · 下载 —</small></article>
+      <article class="metric"><p>历史累计 <span class="metric-icon">▤</span></p><strong id="all-total">—</strong><small id="all-detail">上传 — · 下载 —</small></article>
+      <article class="metric accent"><p>当前传输速度 <span class="metric-icon">⇅</span></p><strong id="rate-total">—</strong><small id="rate-detail">最近采样区间的平均值</small></article>
+    </section>
+    <section class="panel" id="devices">
+      <div class="panel-heading"><div><h2>连接用量</h2><p>按独立身份汇总，同一链接在多台设备上的用量会合并。</p></div><span class="count" id="device-count">— 条连接</span></div>
+      <div class="table-scroll"><table><thead><tr><th>连接名称</th><th>管理</th><th>上传 / 下载速度</th><th>今日</th><th>本月</th><th>累计上传</th><th>累计下载</th><th>累计合计</th><th>本期额度</th></tr></thead><tbody id="devices-body"><tr><td colspan="9" class="empty">正在读取连接数据…</td></tr></tbody></table></div>
+      <p class="table-note">所有连接共用系统重置时间，上传与下载合计。临时流量仅本期有效，统一重置时清除；手机可左右滑动表格。</p>
+    </section>
+    <section class="panel history-panel" id="history">
+      <div class="panel-heading"><div><h2>历史记录 <span id="history-view-label" class="view-label">近 1 天 · 按小时</span></h2><p id="history-description">按北京时间整点汇总最近 24 小时，首尾小时可能不完整。</p></div><a class="button dark" id="export" href="api/export.csv">↓ 导出 CSV</a></div>
+      <form id="filters" class="filters"><label>历史连接<select id="history-device"><option value="">全部连接</option></select></label><label>开始日期<input type="date" id="from" required></label><span class="range-separator">—</span><label>结束日期<input type="date" id="to" required></label><div class="presets" aria-label="快捷日期范围"><button type="button" id="last-day" class="preset selected">近 1 天</button><button type="button" data-days="7" class="preset">近 7 天</button><button type="button" data-days="30" class="preset">近 30 天</button><button type="button" id="custom-history" class="preset">自定义</button></div><button class="button" type="submit">查询</button></form>
+      <div class="period-summary"><span>所选日期合计 <strong id="period-total">—</strong></span><span class="legend"><i class="upload-key"></i> 上传 <i class="download-key"></i> 下载</span></div>
+      <div class="chart-wrap"><svg id="chart" role="img" aria-label="每日上传和下载流量图" viewBox="0 0 960 220" preserveAspectRatio="none"></svg><p id="chart-empty" class="chart-empty" hidden>所选日期暂无流量记录</p></div>
+      <p class="history-coverage" id="history-coverage">未采集的时段显示为 —。</p>
+      <div class="table-scroll"><table><thead><tr><th id="history-period-heading">小时区间 · 北京时间</th><th>连接</th><th>上传流量</th><th>下载流量</th><th>合计</th></tr></thead><tbody id="history-body"><tr><td colspan="5" class="empty">正在读取历史记录…</td></tr></tbody></table></div>
+      <div class="pagination"><span id="history-count">— 条记录</span><div><button class="button small" id="prev" type="button">上一页</button><span id="page-label">1 / 1</span><button class="button small" id="next" type="button">下一页</button></div></div>
+    </section>
+    <footer><span id="started">从启用统计时开始记录。</span><span>每 30 秒更新 · 代理流量口径，可能与服务商账单不同</span><section class="system-card system-mobile" aria-label="服务器资源占用"><p class="system-card-title">系统资源 <span data-system-status>读取中</span></p><div class="system-metric"><span>CPU</span><strong data-system-value="cpu">—</strong><progress data-system-bar="cpu" max="100" value="0"></progress></div><div class="system-metric"><span>内存</span><strong data-system-value="memory">—</strong><progress data-system-bar="memory" max="100" value="0"></progress></div><div class="system-metric"><span>磁盘</span><strong data-system-value="disk">—</strong><progress data-system-bar="disk" max="100" value="0"></progress></div><p class="system-details" data-system-details>等待采集</p></section></footer>
+  </main>
+  <dialog id="link-dialog" class="modal">
+    <form id="link-form">
+      <div class="modal-heading"><div><p class="eyebrow">LINK MANAGEMENT</p><h2 id="link-title">新增连接</h2></div><button class="close-modal" type="button" data-close="link-dialog" aria-label="关闭">×</button></div>
+      <p class="modal-intro">每条连接使用独立身份，单独统计用量并限制额度。</p>
+      <label class="field">连接名称<input id="link-label" type="text" maxlength="64" required placeholder="例如：家人手机"></label>
+      <label class="field">每期流量额度（GiB）<input id="link-quota" type="number" min="0" max="1048576" step="any" required value="0"><small>0 表示不限额；按上传与下载合计，1 GiB = 1024 MiB。</small></label>
+      <p class="next-reset" id="link-next-reset"></p>
+      <label class="check-field"><input id="link-enabled" type="checkbox" checked>启用此连接</label>
+      <p class="operation-note">重置日期在“系统设置”中统一管理。新增、启停、到额停用或恢复时，其他连接会短暂重连。</p>
+      <div class="modal-error" id="link-error" role="alert" hidden></div>
+      <div class="modal-actions"><button class="button danger" type="button" id="reset-period" hidden>立即重置本期用量</button><span class="action-spacer"></span><button class="button" type="button" data-close="link-dialog">取消</button><button class="button dark" type="submit" id="save-link">保存连接</button></div>
+    </form>
+  </dialog>
+  <dialog id="settings-dialog" class="modal">
+    <form id="settings-form">
+      <div class="modal-heading"><div><p class="eyebrow">SYSTEM SETTINGS</p><h2>系统统一重置时间</h2></div><button class="close-modal" type="button" data-close="settings-dialog" aria-label="关闭">×</button></div>
+      <p class="modal-intro">所有连接共用此计划。统一重置时，本期用量清零、临时流量失效，基础月额度和历史记录保留。</p>
+      <div class="form-grid"><label class="field">每月重置日<input id="schedule-day" type="number" min="1" max="31" step="1" required><small>当月没有该日时，在月末重置。</small></label><label class="field">重置时间 · 北京时间<input id="schedule-time" type="time" step="60" required></label></div>
+      <p class="operation-note">修改计划不会清零当前用量，也不会改变现有临时流量；所有连接从下次重置起按新计划执行。</p>
+      <div class="modal-error" id="settings-error" role="alert" hidden></div>
+      <div class="modal-actions"><span class="action-spacer"></span><button class="button" type="button" data-close="settings-dialog">取消</button><button class="button dark" type="submit" id="save-settings">保存系统设置</button></div>
+    </form>
+  </dialog>
+  <dialog id="bonus-dialog" class="modal">
+    <form id="bonus-form">
+      <div class="modal-heading"><div><p class="eyebrow">TEMPORARY ALLOWANCE</p><h2>追加本期临时流量</h2></div><button class="close-modal" type="button" data-close="bonus-dialog" aria-label="关闭">×</button></div>
+      <p class="modal-intro" id="bonus-description"></p>
+      <label class="field">临时增加可用流量（GiB）<input id="bonus-amount" type="number" min="0.000001" max="1048576" step="any" value="1" required><small>会先补足已超用部分，再增加指定的可用流量。</small></label>
+      <p class="operation-note">只增加当前周期的额度，不修改基础月额度，不清零已用量。系统下次统一重置时失效。因超额停用的连接会恢复；手工停用的连接仍保持停用。</p>
+      <div class="modal-error" id="bonus-error" role="alert" hidden></div>
+      <div class="modal-actions"><span class="action-spacer"></span><button class="button" type="button" data-close="bonus-dialog">取消</button><button class="button dark" type="submit" id="save-bonus">追加临时流量</button></div>
+    </form>
+  </dialog>
+  <dialog id="sharing-dialog" class="modal">
+    <div class="modal-heading"><div><p class="eyebrow">PRIVATE CONNECTION</p><h2 id="sharing-title">连接链接</h2></div><button class="close-modal" type="button" data-close="sharing-dialog" aria-label="关闭">×</button></div>
+    <p class="modal-intro" id="sharing-state">请私人保存以下链接。</p>
+    <label class="field">VLESS 连接链接<textarea id="sharing-vless" readonly rows="4" spellcheck="false"></textarea></label><button class="button" type="button" data-copy="sharing-vless">复制 VLESS 链接</button>
+    <label class="field sharing-subscription">Clash / Mihomo 在线订阅<textarea id="sharing-subscription" readonly rows="3" spellcheck="false"></textarea></label><button class="button" type="button" data-copy="sharing-subscription">复制订阅地址</button>
+    <p class="modal-intro" id="copy-status" role="status"></p>
+  </dialog>
+</body>
+</html>

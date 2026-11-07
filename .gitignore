@@ -1,0 +1,49 @@
+# Python / local development
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Builds and private deployment exports
+dist/
+build/
+artifacts/
+.work/
+deliverables/
+*.deb
+*.deb.sha256
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+# Runtime data, credentials, and private keys
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+.env
+.env.*
+!.env.example
+traffic-web-access.json
+web-access.json
+manifest.json
+htpasswd
+*.key
+*.pem
+*.p12
+*.pfx
+*.ppk
+网页登录信息.txt
+
+# Browser acceptance outputs
+node_modules/
+test-results/
+playwright-report/
+traffic-qa-*/

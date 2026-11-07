@@ -1,0 +1,41 @@
+const assert=require('assert'),fs=require('fs'),path=require('path');
+const {chromium}=require('C:/Users/xishu/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const work=path.resolve(__dirname,'../../.work/45.136.178.163');
+const access=JSON.parse(fs.readFileSync(path.join(work,'traffic-web-access.json'),'utf8'));
+const output=path.join(work,'traffic-qa-1.1.0');fs.mkdirSync(output,{recursive:true});
+(async()=>{
+  const browser=await chromium.launch({headless:true});
+  try{
+    const context=await browser.newContext({viewport:{width:1440,height:1080},httpCredentials:{username:access.username,password:access.password}});
+    const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    await page.goto(access.url);await page.waitForFunction(()=>document.getElementById('health').textContent==='采集正常');
+    await page.locator('#new-link').click();
+    const label='QA 网页 "手机" '+Date.now();
+    await page.fill('#link-label',label);await page.fill('#link-quota','1.5');await page.fill('#link-day','15');await page.fill('#link-time','09:30');await page.uncheck('#link-enabled');
+    await page.screenshot({path:path.join(output,'create-dialog-desktop.png')});
+    await page.locator('#save-link').click();await page.waitForFunction(()=>document.getElementById('sharing-dialog').open);
+    const vless=await page.locator('#sharing-vless').inputValue();const subscription=await page.locator('#sharing-subscription').inputValue();
+    assert(vless.startsWith('vless://')&&subscription.startsWith('https://45.136.178.163:8443/s/'));
+    let summary=await (await context.request.get(access.url+'api/summary')).json();let device=summary.devices.find(d=>d.label===label);assert(device&&!device.enabled&&device.quota===1.5*1024**3&&device.reset_day===15&&device.reset_time==='09:30');
+    fs.writeFileSync(path.join(output,'fixture.json'),JSON.stringify({id:device.id,label}));
+    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>window.__copied=value}}));
+    await page.locator('[data-copy="sharing-vless"]').click();assert.strictEqual(await page.evaluate(()=>window.__copied),vless);
+    await page.locator('[data-close="sharing-dialog"]').click();
+    const row=page.locator('#devices-body tr').filter({hasText:label});await row.getByRole('button',{name:'编辑',exact:true}).click();
+    await page.fill('#link-quota','2');await page.fill('#link-day','20');await page.fill('#link-time','08:45');await page.locator('#save-link').click();await page.waitForFunction(()=>!document.getElementById('link-dialog').open);
+    summary=await (await context.request.get(access.url+'api/summary')).json();device=summary.devices.find(d=>d.id===device.id);assert(device.quota===2*1024**3&&device.reset_day===20&&device.reset_time==='08:45');
+    const token=(await (await context.request.get(access.url+'api/session')).json()).token;
+    const origin=new URL(access.url).origin;
+    let response=await context.request.post(access.url+'api/links/'+device.id+'/update',{headers:{Origin:origin},data:{label:'unauthorized'}});assert.strictEqual(response.status(),403);
+    response=await context.request.post(access.url+'api/links/'+device.id+'/update',{headers:{Origin:'https://foreign.invalid','X-VPN-CSRF':token},data:{label:'unauthorized'}});assert.strictEqual(response.status(),403);
+    response=await context.request.post(access.url+'api/links/'+device.id+'/update',{headers:{Origin:origin,'X-VPN-CSRF':token},data:{reset_day:32}});assert.strictEqual(response.status(),400);
+    await page.locator('#refresh').click();await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
+    await page.screenshot({path:path.join(output,'management-desktop.png'),fullPage:true});
+    await page.locator('#new-link').click();await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(output,'create-dialog-mobile.png')});
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+    await page.locator('[data-close="link-dialog"]').first().click();
+    assert.strictEqual(errors.length,0,errors.join('\n'));
+    const report={createdThroughWeb:true,independentShareLinks:true,clipboard:true,monthlyQuotaSaved:true,customResetDayAndTimeSaved:true,csrfMissingDenied:true,crossOriginDenied:true,invalidScheduleDenied:true,mobileDialogFits:true,javascriptErrors:errors};
+    fs.writeFileSync(path.join(output,'management-web-qa.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+  }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exit(1);});

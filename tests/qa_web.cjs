@@ -1,0 +1,46 @@
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const {chromium}=require('C:/Users/xishu/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const work=path.resolve(process.env.VPN_TRAFFIC_QA_DIR || path.join(__dirname,'../../.work/45.136.178.163'));
+const access=JSON.parse(fs.readFileSync(path.join(work,'traffic-web-access.json'),'utf8'));
+const qa=path.join(work,'traffic-qa');fs.mkdirSync(qa,{recursive:true});
+(async()=>{
+  const browser=await chromium.launch({headless:true});
+  try{
+    const context=await browser.newContext({viewport:{width:1440,height:1080},httpCredentials:{username:access.username,password:access.password},acceptDownloads:true});
+    const page=await context.newPage();const errors=[];
+    page.on('pageerror',e=>errors.push(e.message));
+    page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+    await page.goto(access.url);await page.waitForFunction(()=>document.getElementById('health').textContent==='采集正常');
+    await page.waitForFunction(()=>document.querySelectorAll('#devices-body .device-name').length===2);
+    assert.strictEqual(await page.locator('#error').isVisible(),false);
+    await page.screenshot({path:path.join(qa,'dashboard-desktop.png'),fullPage:true});
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+    await page.selectOption('#device','windows');
+    await page.waitForFunction(()=>document.querySelectorAll('#devices-body .device-name').length===1 && document.querySelector('#history-body').textContent.includes('VPN-45-Windows'));
+    assert(!(await page.locator('#devices-body').innerText()).includes('Android'));
+    const downloadPromise=page.waitForEvent('download');await page.locator('#export').click();const download=await downloadPromise;
+    const csvPath=path.join(qa,'windows.csv');await download.saveAs(csvPath);
+    const csv=fs.readFileSync(csvPath,'utf8');assert(csv.includes('VPN-45-Windows')&&!csv.includes('VPN-45-Android'));
+    await page.fill('#from','2026-11-08');await page.fill('#to','2026-11-07');await page.locator('#filters button[type=submit]').click();
+    await page.waitForFunction(()=>document.getElementById('error').textContent.includes('开始日期不能晚于结束日期'));
+    await page.locator('[data-days="7"]').click();await page.waitForFunction(()=>document.getElementById('error').hidden);
+    await page.fill('#from','2026-11-08');await page.fill('#to','2026-11-08');await page.locator('#filters button[type=submit]').click();
+    await page.waitForFunction(()=>document.getElementById('history-body').textContent.includes('所选日期暂无记录'));
+    assert(await page.locator('#chart-empty').isVisible());
+    await page.locator('[data-days="30"]').click();await page.waitForFunction(()=>document.getElementById('history-body').textContent.includes('VPN-45-Windows'));
+    await page.selectOption('#device','');await page.waitForFunction(()=>document.querySelectorAll('#devices-body .device-name').length===2 && document.querySelector('#history-body').textContent.includes('VPN-45-Android') && document.querySelector('#history-body').textContent.includes('VPN-45-Windows'));
+    await page.locator('[data-days="7"]').click();
+    await page.setViewportSize({width:390,height:844});
+    await page.waitForFunction(()=>Number(document.getElementById('chart').getAttribute('viewBox').split(' ')[2])<400);
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Mobile page overflow');
+    await page.screenshot({path:path.join(qa,'dashboard-mobile.png'),fullPage:true});
+    await page.setViewportSize({width:1440,height:1080});await page.locator('#refresh').click();await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
+    assert.strictEqual(errors.length,0,errors.join('\n'));
+    const api=await context.request.get(access.url+'api/summary');assert.strictEqual(api.status(),200);const data=await api.json();assert(data.healthy&&data.devices.length===2);
+    assert(!JSON.stringify(data).includes('uuid')&&!JSON.stringify(data).includes('privateKey'));
+    const report={desktop:'1440x1080',mobile:'390x844',pageOverflow:false,deviceFilter:true,dateValidation:true,emptyRange:true,csvExport:true,refresh:true,javascriptErrors:errors,credentialsNotExposedInApi:true};
+    fs.writeFileSync(path.join(qa,'web-qa.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+  }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exit(1);});

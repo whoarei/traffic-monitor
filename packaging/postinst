@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+if [ "$1" = configure ]; then
+    if ! getent passwd vpn-traffic >/dev/null; then
+        adduser --system --group --no-create-home --home /nonexistent vpn-traffic >/dev/null
+    fi
+    /usr/bin/vpn-traffic configure
+    systemd-analyze verify /usr/lib/systemd/system/vpn-traffic-collector.service /usr/lib/systemd/system/vpn-traffic-manager.service /usr/lib/systemd/system/vpn-traffic-web.service
+    systemctl daemon-reload
+    systemctl enable --now vpn-traffic-collector.service vpn-traffic-manager.service vpn-traffic-web.service
+    systemctl is-active --quiet vpn-traffic-collector.service vpn-traffic-manager.service vpn-traffic-web.service
+    /usr/bin/python3 - <<'PY'
+import json
+import time
+import urllib.request
+opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
+for attempt in range(20):
+    try:
+        with opener.open('http://127.0.0.1:9081/api/health',timeout=2) as response:
+            if json.load(response)['ok']:
+                break
+    except Exception:
+        pass
+    time.sleep(.5)
+else:
+    raise SystemExit('Dashboard health check failed; inspect vpn-traffic service logs')
+PY
+    echo "VPN traffic dashboard ready. Run: sudo vpn-traffic web-password"
+fi

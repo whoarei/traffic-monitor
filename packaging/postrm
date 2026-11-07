@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+systemctl daemon-reload || true
+# Keep the database, backups, and administrator credentials on removal or purge.
+# Deleting historical traffic requires an explicit administrator action.

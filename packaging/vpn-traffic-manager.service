@@ -1,0 +1,30 @@
+[Unit]
+Description=VPN link management and monthly quota enforcement
+After=network-online.target xray.service nginx.service vpn-traffic-collector.service
+Wants=nginx.service vpn-traffic-collector.service
+
+[Service]
+Type=simple
+User=root
+Group=vpn-traffic
+ExecStart=/usr/bin/vpn-traffic manager
+Restart=on-failure
+RestartSec=3
+UMask=0077
+RuntimeDirectory=vpn-traffic-manager
+RuntimeDirectoryMode=0750
+NoNewPrivileges=true
+ProtectSystem=strict
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/etc/vpn-traffic /var/lib/vpn-traffic /root/xray-deployment /usr/local/etc/xray /etc/nginx /var/lib/xray-subscription /run/vpn-traffic-manager /var/backups/vpn-traffic /var/log/nginx /run/nginx.pid
+MemoryMax=96M
+TasksMax=48
+
+[Install]
+WantedBy=multi-user.target

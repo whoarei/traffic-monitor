@@ -1,0 +1,29 @@
+[Unit]
+Description=Private VPN traffic dashboard
+After=network-online.target vpn-traffic-collector.service vpn-traffic-manager.service
+Wants=vpn-traffic-collector.service vpn-traffic-manager.service
+
+[Service]
+Type=simple
+User=vpn-traffic
+Group=vpn-traffic
+ExecStart=/usr/bin/vpn-traffic serve
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_UNIX
+ReadOnlyPaths=/var/lib/vpn-traffic
+MemoryMax=64M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+case "$1" in
+  remove|upgrade|deconfigure)
+    /usr/bin/vpn-traffic checkpoint --quiet || true
+    systemctl stop vpn-traffic-web.service vpn-traffic-manager.service vpn-traffic-collector.service || true
+    ;;
+esac
+case "$1" in
+  remove|deconfigure)
+    systemctl disable vpn-traffic-web.service vpn-traffic-manager.service vpn-traffic-collector.service || true
+    /usr/bin/vpn-traffic disable
+    ;;
+esac
