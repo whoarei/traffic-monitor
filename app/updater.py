@@ -509,6 +509,10 @@ class Engine:
             return
         if data["state"] == "recovery_required":
             self.maintenance(True)
+        elif data["state"] in TERMINAL:
+            # A power loss can occur after committing the terminal job status
+            # and before unlinking its maintenance flag.
+            self.maintenance(False)
         elif data["state"] not in TERMINAL:
             job = Job(self.state / "jobs" / data["id"])
             if data["installation_started"] or data.get("services_paused"):

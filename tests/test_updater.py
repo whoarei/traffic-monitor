@@ -205,6 +205,13 @@ class UpdaterTests(unittest.TestCase):
     def test_terminal_job_is_not_reexecuted(self):
         job=self.start();self.engine.worker(job.folder.name);before=len(self.host.calls);self.engine.worker(job.folder.name);self.engine.resume()
         self.assertEqual(len(self.host.calls),before)
+    def test_terminal_status_clears_flag_left_by_interrupted_finalization(self):
+        job=self.start()
+        for state in ("succeeded","rolled_back","failed"):
+            job.update(state=state);self.engine.maintenance(True);before=len(self.host.calls)
+            self.engine.resume()
+            self.assertFalse((self.engine.run / "maintenance").exists())
+            self.assertEqual(len(self.host.calls),before)
     def test_download_hash_and_size_are_checked_before_rename(self):
         source=protocol.ReleaseSource();target=self.root / "download.deb"
         for data,size,digest in [(b"BAD",3,hashlib.sha256(b"OK!").hexdigest()),(b"TOO-LONG",2,hashlib.sha256(b"TO").hexdigest())]:
